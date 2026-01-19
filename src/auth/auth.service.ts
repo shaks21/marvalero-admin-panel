@@ -1,40 +1,67 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
   ) {}
 
   async validateAdmin(email: string, password: string) {
-    const admin = await this.prisma.admin.findUnique({ where: { email } });
+    // Input validation
+    if (!email || !password) {
+      throw new UnauthorizedException('Email and password are required');
+    }
 
-    console.log('Admin record:', admin);
+    const admin = await this.prisma.admin.findUnique({
+      where: { email },
+    });
 
-    if (!admin || !admin.isActive) {
+    // Check if admin exists
+    if (!admin) {
+      // Use same error message to prevent email enumeration
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const passwordValid = await bcrypt.compare(password, admin.passwordHash);
+    // Check if admin is active
+    if (!admin.isActive) {
+      throw new UnauthorizedException('Account is inactive');
+    }
 
-    console.log('Password valid:', passwordValid);
+    // Verify password hash exists
+    if (!admin.passwordHash) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Compare passwords
+    const passwordValid = await bcrypt.compare(password, admin.passwordHash);
 
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return admin;
+    // Remove sensitive data before returning
+    const { passwordHash, ...result } = admin;
+    return result;
   }
 
-  async login(admin: { id: string }) {
+  async login(admin: any) {
+    const payload = {
+      sub: admin.id, // Make sure this matches what you expect
+      isAdmin: true, // Make sure this is boolean true, not string
+    };
+
+    this.logger.debug(`Creating JWT with payload: ${JSON.stringify(payload)}`);
+
     return {
-      accessToken: this.jwtService.sign({
-        sub: admin.id,
-        isAdmin: true,
+      accessToken: this.jwtService.sign(payload, {
+        secret: process.env.ADMIN_JWT_SECRET,
+        expiresIn: '24h',
       }),
     };
   }

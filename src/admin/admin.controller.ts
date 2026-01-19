@@ -27,14 +27,14 @@ export class AdminController {
     return admin;
   }
 
-  @Post()
-  async signupAdmin(
-    @Body() adminData: { email: string; password: string },
-  ): Promise<AdminModel> {
-    const passwordHash = adminData.password; // Replace with bcrypt in production
-    return this.adminService.createAdmin({
-      email: adminData.email,
-      passwordHash,
-    });
-  }
+  // @Post()
+  // async signupAdmin(
+  //   @Body() adminData: { email: string; password: string },
+  // ): Promise<AdminModel> {
+  //   const passwordHash = adminData.password; // Replace with bcrypt in production
+  //   return this.adminService.createAdmin({
+  //     email: adminData.email,
+  //     passwordHash,
+  //   });
+  // }
 }

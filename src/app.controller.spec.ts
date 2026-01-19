@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js'; // Import the dependency
 
 describe('AppController', () => {
   let appController: AppController;
@@ -7,7 +8,16 @@ describe('AppController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [], // no AppService needed for this simple test
+      // FIX: Even if the controller is simple, we should provide a mock 
+      // or the actual service to satisfy the dependency graph.
+      providers: [
+        {
+          provide: AppService,
+          useValue: {
+            getHello: () => ({ message: 'Welcome to the API' }), // Mock implementation
+          },
+        },
+      ],
     }).compile();
 
     appController = module.get<AppController>(AppController);
