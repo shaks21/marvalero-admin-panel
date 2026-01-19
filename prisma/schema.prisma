@@ -1,0 +1,33 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // URL is removed from here. It is now in prisma.config.ts
+}
+
+model Admin {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  auditLogs     AdminAuditLog[]
+}
+
+model AdminAuditLog {
+  id            String    @id @default(uuid())
+  adminId       String
+  actionType    String
+  targetUserId  String?
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+
+  admin         Admin     @relation(fields: [adminId], references: [id])
+}
