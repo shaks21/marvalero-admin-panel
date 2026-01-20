@@ -27,3 +27,13 @@ export type Admin = Prisma.AdminModel
  * 
  */
 export type AdminAuditLog = Prisma.AdminAuditLogModel
+/**
+ * Model User
+ * 
+ */
+export type User = Prisma.UserModel
+/**
+ * Model Business
+ * 
+ */
+export type Business = Prisma.BusinessModel

@@ -1,8 +1,9 @@
 //admin.controller.ts
-import { Controller, UseGuards, Get, Post, Body, Param, NotFoundException, Req } from '@nestjs/common';
+import { Controller, UseGuards, Get, Post, Body, Param, NotFoundException, Req, Query } from '@nestjs/common';
 import { AdminGuard } from '../auth/guards/admin.guard.js';
 import { AdminService } from './admin.service.js';
 import { Admin as AdminModel } from '../generated/prisma/client.js';
+import { AdminUserSearchDto } from './dto/admin-user-search.dto.js';
 
 @UseGuards(AdminGuard) // Apply guard globally to this controller
 @Controller('admin')
@@ -25,6 +26,11 @@ export class AdminController {
     const admin = await this.adminService.admin({ id });
     if (!admin) throw new NotFoundException('Admin not found');
     return admin;
+  }
+
+  @Get('users/search')
+  searchUsers(@Query() query: AdminUserSearchDto) {
+    return this.adminService.searchUsers(query);
   }
 
   // @Post()

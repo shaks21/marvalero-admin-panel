@@ -13,12 +13,9 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main.js",
     "seed:admin": "ts-node prisma/seed.ts",
-    "prisma:seed": "prisma db seed",
-    "test:tsx": "tsx --test src/**/*.spec.ts",
-    "test:file": "jest --config jest.config.cjs",
-    "test": "set NODE_OPTIONS=--experimental-vm-modules && jest --config jest.config.cjs",
-    "test:watch": "jest --watch --config jest.config.cjs",
-    "test:cov": "jest --coverage --config jest.config.cjs"
+    "prisma:seed": "prisma db seed",    
+    "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./test/jest-e2e.json"
+
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

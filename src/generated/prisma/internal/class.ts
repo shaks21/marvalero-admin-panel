@@ -20,7 +20,7 @@ const config: runtime.GetPrismaClientConfig = {
   "clientVersion": "7.2.0",
   "engineVersion": "0c8ef2ce45c83248ab3df073180d5eda9e8be7a3",
   "activeProvider": "postgresql",
-  "inlineSchema": "// prisma/schema.prisma\n\ngenerator client {\n  provider = \"prisma-client\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  // URL is removed from here. It is now in prisma.config.ts\n}\n\nmodel Admin {\n  id           String   @id @default(uuid())\n  email        String   @unique\n  passwordHash String\n  isActive     Boolean  @default(true)\n  createdAt    DateTime @default(now())\n  updatedAt    DateTime @updatedAt\n\n  auditLogs AdminAuditLog[]\n}\n\nmodel AdminAuditLog {\n  id           String   @id @default(uuid())\n  adminId      String?\n  actionType   String\n  targetUserId String?\n  metadata     Json?\n  createdAt    DateTime @default(now())\n\n  admin Admin? @relation(fields: [adminId], references: [id])\n\n  @@index([adminId])\n  @@index([actionType])\n  @@index([createdAt])\n}\n",
+  "inlineSchema": "// prisma/schema.prisma\n\ngenerator client {\n  provider = \"prisma-client\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  // URL is removed from here. It is now in prisma.config.ts\n}\n\nmodel Admin {\n  id           String   @id @default(uuid())\n  email        String   @unique\n  passwordHash String\n  isActive     Boolean  @default(true)\n  createdAt    DateTime @default(now())\n  updatedAt    DateTime @updatedAt\n\n  auditLogs AdminAuditLog[]\n}\n\nmodel AdminAuditLog {\n  id           String   @id @default(uuid())\n  adminId      String?\n  actionType   String\n  targetUserId String?\n  metadata     Json?\n  createdAt    DateTime @default(now())\n\n  admin Admin? @relation(fields: [adminId], references: [id])\n\n  @@index([adminId])\n  @@index([actionType])\n  @@index([createdAt])\n}\n\nmodel User {\n  id          String        @id @default(uuid())\n  name        String?\n  email       String        @unique\n  phone       String?\n  userType    UserType\n  status      AccountStatus\n  lastLoginAt DateTime?\n  createdAt   DateTime      @default(now())\n\n  business Business?\n}\n\nmodel Business {\n  id     String @id @default(uuid())\n  name   String\n  userId String @unique\n  user   User   @relation(fields: [userId], references: [id])\n}\n\nenum UserType {\n  USER\n  BUSINESS\n  ADMIN\n}\n\nenum AccountStatus {\n  ACTIVE\n  SUSPENDED\n  BANNED\n}\n",
   "runtimeDataModel": {
     "models": {},
     "enums": {},
@@ -28,7 +28,7 @@ const config: runtime.GetPrismaClientConfig = {
   }
 }
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"Admin\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"passwordHash\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"isActive\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"auditLogs\",\"kind\":\"object\",\"type\":\"AdminAuditLog\",\"relationName\":\"AdminToAdminAuditLog\"}],\"dbName\":null},\"AdminAuditLog\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"adminId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"actionType\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"targetUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"metadata\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"admin\",\"kind\":\"object\",\"type\":\"Admin\",\"relationName\":\"AdminToAdminAuditLog\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"Admin\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"passwordHash\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"isActive\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"auditLogs\",\"kind\":\"object\",\"type\":\"AdminAuditLog\",\"relationName\":\"AdminToAdminAuditLog\"}],\"dbName\":null},\"AdminAuditLog\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"adminId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"actionType\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"targetUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"metadata\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"admin\",\"kind\":\"object\",\"type\":\"Admin\",\"relationName\":\"AdminToAdminAuditLog\"}],\"dbName\":null},\"User\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"phone\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userType\",\"kind\":\"enum\",\"type\":\"UserType\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"AccountStatus\"},{\"name\":\"lastLoginAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"business\",\"kind\":\"object\",\"type\":\"Business\",\"relationName\":\"BusinessToUser\"}],\"dbName\":null},\"Business\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"user\",\"kind\":\"object\",\"type\":\"User\",\"relationName\":\"BusinessToUser\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 
 async function decodeBase64AsWasm(wasmBase64: string): Promise<WebAssembly.Module> {
   const { Buffer } = await import('node:buffer')
@@ -193,6 +193,26 @@ export interface PrismaClient<
     * ```
     */
   get adminAuditLog(): Prisma.AdminAuditLogDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.user`: Exposes CRUD operations for the **User** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Users
+    * const users = await prisma.user.findMany()
+    * ```
+    */
+  get user(): Prisma.UserDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.business`: Exposes CRUD operations for the **Business** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Businesses
+    * const businesses = await prisma.business.findMany()
+    * ```
+    */
+  get business(): Prisma.BusinessDelegate<ExtArgs, { omit: OmitOpts }>;
 }
 
 export function getPrismaClientClass(): PrismaClientConstructor {

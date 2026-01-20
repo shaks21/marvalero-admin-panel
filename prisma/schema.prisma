@@ -35,3 +35,35 @@ model AdminAuditLog {
   @@index([actionType])
   @@index([createdAt])
 }
+
+model User {
+  id            String   @id @default(uuid())
+  name          String?
+  email         String   @unique
+  phone         String?
+  userType      UserType
+  status        AccountStatus
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+
+  business      Business?
+}
+
+model Business {
+  id        String @id @default(uuid())
+  name      String
+  userId    String @unique
+  user      User   @relation(fields: [userId], references: [id])
+}
+
+enum UserType {
+  USER
+  BUSINESS
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
