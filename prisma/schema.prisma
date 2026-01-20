@@ -23,11 +23,15 @@ model Admin {
 
 model AdminAuditLog {
   id            String    @id @default(uuid())
-  adminId       String
+  adminId       String?
   actionType    String
   targetUserId  String?
   metadata      Json?
   createdAt     DateTime  @default(now())
 
-  admin         Admin     @relation(fields: [adminId], references: [id])
+  admin         Admin?     @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([actionType])
+  @@index([createdAt])
 }

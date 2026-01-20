@@ -151,7 +151,7 @@ export type AdminAuditLogGroupByArgs<ExtArgs extends runtime.Types.Extensions.In
 
 export type AdminAuditLogGroupByOutputType = {
   id: string
-  adminId: string
+  adminId: string | null
   actionType: string
   targetUserId: string | null
   metadata: runtime.JsonValue | null
@@ -181,17 +181,17 @@ export type AdminAuditLogWhereInput = {
   OR?: Prisma.AdminAuditLogWhereInput[]
   NOT?: Prisma.AdminAuditLogWhereInput | Prisma.AdminAuditLogWhereInput[]
   id?: Prisma.StringFilter<"AdminAuditLog"> | string
-  adminId?: Prisma.StringFilter<"AdminAuditLog"> | string
+  adminId?: Prisma.StringNullableFilter<"AdminAuditLog"> | string | null
   actionType?: Prisma.StringFilter<"AdminAuditLog"> | string
   targetUserId?: Prisma.StringNullableFilter<"AdminAuditLog"> | string | null
   metadata?: Prisma.JsonNullableFilter<"AdminAuditLog">
   createdAt?: Prisma.DateTimeFilter<"AdminAuditLog"> | Date | string
-  admin?: Prisma.XOR<Prisma.AdminScalarRelationFilter, Prisma.AdminWhereInput>
+  admin?: Prisma.XOR<Prisma.AdminNullableScalarRelationFilter, Prisma.AdminWhereInput> | null
 }
 
 export type AdminAuditLogOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  adminId?: Prisma.SortOrder
+  adminId?: Prisma.SortOrderInput | Prisma.SortOrder
   actionType?: Prisma.SortOrder
   targetUserId?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -204,17 +204,17 @@ export type AdminAuditLogWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.AdminAuditLogWhereInput | Prisma.AdminAuditLogWhereInput[]
   OR?: Prisma.AdminAuditLogWhereInput[]
   NOT?: Prisma.AdminAuditLogWhereInput | Prisma.AdminAuditLogWhereInput[]
-  adminId?: Prisma.StringFilter<"AdminAuditLog"> | string
+  adminId?: Prisma.StringNullableFilter<"AdminAuditLog"> | string | null
   actionType?: Prisma.StringFilter<"AdminAuditLog"> | string
   targetUserId?: Prisma.StringNullableFilter<"AdminAuditLog"> | string | null
   metadata?: Prisma.JsonNullableFilter<"AdminAuditLog">
   createdAt?: Prisma.DateTimeFilter<"AdminAuditLog"> | Date | string
-  admin?: Prisma.XOR<Prisma.AdminScalarRelationFilter, Prisma.AdminWhereInput>
+  admin?: Prisma.XOR<Prisma.AdminNullableScalarRelationFilter, Prisma.AdminWhereInput> | null
 }, "id">
 
 export type AdminAuditLogOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  adminId?: Prisma.SortOrder
+  adminId?: Prisma.SortOrderInput | Prisma.SortOrder
   actionType?: Prisma.SortOrder
   targetUserId?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -229,7 +229,7 @@ export type AdminAuditLogScalarWhereWithAggregatesInput = {
   OR?: Prisma.AdminAuditLogScalarWhereWithAggregatesInput[]
   NOT?: Prisma.AdminAuditLogScalarWhereWithAggregatesInput | Prisma.AdminAuditLogScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"AdminAuditLog"> | string
-  adminId?: Prisma.StringWithAggregatesFilter<"AdminAuditLog"> | string
+  adminId?: Prisma.StringNullableWithAggregatesFilter<"AdminAuditLog"> | string | null
   actionType?: Prisma.StringWithAggregatesFilter<"AdminAuditLog"> | string
   targetUserId?: Prisma.StringNullableWithAggregatesFilter<"AdminAuditLog"> | string | null
   metadata?: Prisma.JsonNullableWithAggregatesFilter<"AdminAuditLog">
@@ -242,12 +242,12 @@ export type AdminAuditLogCreateInput = {
   targetUserId?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  admin: Prisma.AdminCreateNestedOneWithoutAuditLogsInput
+  admin?: Prisma.AdminCreateNestedOneWithoutAuditLogsInput
 }
 
 export type AdminAuditLogUncheckedCreateInput = {
   id?: string
-  adminId: string
+  adminId?: string | null
   actionType: string
   targetUserId?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -260,12 +260,12 @@ export type AdminAuditLogUpdateInput = {
   targetUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  admin?: Prisma.AdminUpdateOneRequiredWithoutAuditLogsNestedInput
+  admin?: Prisma.AdminUpdateOneWithoutAuditLogsNestedInput
 }
 
 export type AdminAuditLogUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  adminId?: Prisma.StringFieldUpdateOperationsInput | string
+  adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   actionType?: Prisma.StringFieldUpdateOperationsInput | string
   targetUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -274,7 +274,7 @@ export type AdminAuditLogUncheckedUpdateInput = {
 
 export type AdminAuditLogCreateManyInput = {
   id?: string
-  adminId: string
+  adminId?: string | null
   actionType: string
   targetUserId?: string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -291,7 +291,7 @@ export type AdminAuditLogUpdateManyMutationInput = {
 
 export type AdminAuditLogUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  adminId?: Prisma.StringFieldUpdateOperationsInput | string
+  adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   actionType?: Prisma.StringFieldUpdateOperationsInput | string
   targetUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -426,7 +426,7 @@ export type AdminAuditLogScalarWhereInput = {
   OR?: Prisma.AdminAuditLogScalarWhereInput[]
   NOT?: Prisma.AdminAuditLogScalarWhereInput | Prisma.AdminAuditLogScalarWhereInput[]
   id?: Prisma.StringFilter<"AdminAuditLog"> | string
-  adminId?: Prisma.StringFilter<"AdminAuditLog"> | string
+  adminId?: Prisma.StringNullableFilter<"AdminAuditLog"> | string | null
   actionType?: Prisma.StringFilter<"AdminAuditLog"> | string
   targetUserId?: Prisma.StringNullableFilter<"AdminAuditLog"> | string | null
   metadata?: Prisma.JsonNullableFilter<"AdminAuditLog">
@@ -474,7 +474,7 @@ export type AdminAuditLogSelect<ExtArgs extends runtime.Types.Extensions.Interna
   targetUserId?: boolean
   metadata?: boolean
   createdAt?: boolean
-  admin?: boolean | Prisma.AdminDefaultArgs<ExtArgs>
+  admin?: boolean | Prisma.AdminAuditLog$adminArgs<ExtArgs>
 }, ExtArgs["result"]["adminAuditLog"]>
 
 export type AdminAuditLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -484,7 +484,7 @@ export type AdminAuditLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   targetUserId?: boolean
   metadata?: boolean
   createdAt?: boolean
-  admin?: boolean | Prisma.AdminDefaultArgs<ExtArgs>
+  admin?: boolean | Prisma.AdminAuditLog$adminArgs<ExtArgs>
 }, ExtArgs["result"]["adminAuditLog"]>
 
 export type AdminAuditLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -494,7 +494,7 @@ export type AdminAuditLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   targetUserId?: boolean
   metadata?: boolean
   createdAt?: boolean
-  admin?: boolean | Prisma.AdminDefaultArgs<ExtArgs>
+  admin?: boolean | Prisma.AdminAuditLog$adminArgs<ExtArgs>
 }, ExtArgs["result"]["adminAuditLog"]>
 
 export type AdminAuditLogSelectScalar = {
@@ -508,23 +508,23 @@ export type AdminAuditLogSelectScalar = {
 
 export type AdminAuditLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "adminId" | "actionType" | "targetUserId" | "metadata" | "createdAt", ExtArgs["result"]["adminAuditLog"]>
 export type AdminAuditLogInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  admin?: boolean | Prisma.AdminDefaultArgs<ExtArgs>
+  admin?: boolean | Prisma.AdminAuditLog$adminArgs<ExtArgs>
 }
 export type AdminAuditLogIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  admin?: boolean | Prisma.AdminDefaultArgs<ExtArgs>
+  admin?: boolean | Prisma.AdminAuditLog$adminArgs<ExtArgs>
 }
 export type AdminAuditLogIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  admin?: boolean | Prisma.AdminDefaultArgs<ExtArgs>
+  admin?: boolean | Prisma.AdminAuditLog$adminArgs<ExtArgs>
 }
 
 export type $AdminAuditLogPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "AdminAuditLog"
   objects: {
-    admin: Prisma.$AdminPayload<ExtArgs>
+    admin: Prisma.$AdminPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    adminId: string
+    adminId: string | null
     actionType: string
     targetUserId: string | null
     metadata: runtime.JsonValue | null
@@ -923,7 +923,7 @@ readonly fields: AdminAuditLogFieldRefs;
  */
 export interface Prisma__AdminAuditLogClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  admin<T extends Prisma.AdminDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AdminDefaultArgs<ExtArgs>>): Prisma.Prisma__AdminClient<runtime.Types.Result.GetResult<Prisma.$AdminPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  admin<T extends Prisma.AdminAuditLog$adminArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AdminAuditLog$adminArgs<ExtArgs>>): Prisma.Prisma__AdminClient<runtime.Types.Result.GetResult<Prisma.$AdminPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1352,6 +1352,25 @@ export type AdminAuditLogDeleteManyArgs<ExtArgs extends runtime.Types.Extensions
    * Limit how many AdminAuditLogs to delete.
    */
   limit?: number
+}
+
+/**
+ * AdminAuditLog.admin
+ */
+export type AdminAuditLog$adminArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Admin
+   */
+  select?: Prisma.AdminSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Admin
+   */
+  omit?: Prisma.AdminOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AdminInclude<ExtArgs> | null
+  where?: Prisma.AdminWhereInput
 }
 
 /**
