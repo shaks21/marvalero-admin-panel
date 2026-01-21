@@ -13,9 +13,10 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main.js",
     "seed:admin": "ts-node prisma/seed.ts",
-    "prisma:seed": "prisma db seed",    
-    "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./test/jest-e2e.json"
-
+    "prisma:seed": "prisma db seed",
+    "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./jest-unit.json",
+    "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
+    "test": "npm run test:unit && npm run test:e2e"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -35,7 +36,8 @@
     "passport-jwt": "^4.0.1",
     "pg": "^8.17.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "stripe": "^20.2.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

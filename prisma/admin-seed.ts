@@ -1,4 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+// import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../src/generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 import * as dotenv from "dotenv";
 import * as bcrypt from "bcrypt";
@@ -28,7 +29,7 @@ async function main() {
   const admin = await prisma.admin.upsert({
     where: { email },
     update: {},
-    create: { email, passwordHash: hash },
+    create: { email, password: hash },
   });
 
   console.log("Admin seeded:", admin.email);

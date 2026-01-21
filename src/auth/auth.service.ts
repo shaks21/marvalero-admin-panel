@@ -34,19 +34,19 @@ export class AuthService {
     }
 
     // Verify password hash exists
-    if (!admin.passwordHash) {
+    if (!admin.password) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     // Compare passwords
-    const passwordValid = await bcrypt.compare(password, admin.passwordHash);
+    const passwordValid = await bcrypt.compare(password, admin.password);
 
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     // Remove sensitive data before returning
-    const { passwordHash, ...result } = admin;
+    const { password: _, ...result } = admin;
     return result;
   }
 

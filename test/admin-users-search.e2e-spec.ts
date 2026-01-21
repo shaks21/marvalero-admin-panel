@@ -4,6 +4,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 // ESM requires explicit extensions for relative imports
 import { AppModule } from '../src/app.module.js';
+import { AuditInterceptor } from '../src/audit/audit.interceptor.js';
 
 describe('Admin User Search (e2e)', () => {
   let app: INestApplication;
@@ -15,6 +16,11 @@ describe('Admin User Search (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+
+    // Apply audit interceptor globally
+    const auditInterceptor = app.get(AuditInterceptor);
+    app.useGlobalInterceptors(auditInterceptor);
+
     await app.init();
 
     /**
@@ -148,7 +154,6 @@ describe('Admin User Search (e2e)', () => {
 
     // security: no sensitive fields
     expect(user).not.toHaveProperty('password');
-    expect(user).not.toHaveProperty('passwordHash');
   });
 
   /**

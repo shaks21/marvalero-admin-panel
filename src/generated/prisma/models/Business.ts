@@ -28,18 +28,30 @@ export type BusinessMinAggregateOutputType = {
   id: string | null
   name: string | null
   userId: string | null
+  stripeCustomerId: string | null
+  stripeSubscriptionId: string | null
+  subscriptionPlan: string | null
+  subscriptionStatus: string | null
 }
 
 export type BusinessMaxAggregateOutputType = {
   id: string | null
   name: string | null
   userId: string | null
+  stripeCustomerId: string | null
+  stripeSubscriptionId: string | null
+  subscriptionPlan: string | null
+  subscriptionStatus: string | null
 }
 
 export type BusinessCountAggregateOutputType = {
   id: number
   name: number
   userId: number
+  stripeCustomerId: number
+  stripeSubscriptionId: number
+  subscriptionPlan: number
+  subscriptionStatus: number
   _all: number
 }
 
@@ -48,18 +60,30 @@ export type BusinessMinAggregateInputType = {
   id?: true
   name?: true
   userId?: true
+  stripeCustomerId?: true
+  stripeSubscriptionId?: true
+  subscriptionPlan?: true
+  subscriptionStatus?: true
 }
 
 export type BusinessMaxAggregateInputType = {
   id?: true
   name?: true
   userId?: true
+  stripeCustomerId?: true
+  stripeSubscriptionId?: true
+  subscriptionPlan?: true
+  subscriptionStatus?: true
 }
 
 export type BusinessCountAggregateInputType = {
   id?: true
   name?: true
   userId?: true
+  stripeCustomerId?: true
+  stripeSubscriptionId?: true
+  subscriptionPlan?: true
+  subscriptionStatus?: true
   _all?: true
 }
 
@@ -139,6 +163,10 @@ export type BusinessGroupByOutputType = {
   id: string
   name: string
   userId: string
+  stripeCustomerId: string | null
+  stripeSubscriptionId: string | null
+  subscriptionPlan: string | null
+  subscriptionStatus: string | null
   _count: BusinessCountAggregateOutputType | null
   _min: BusinessMinAggregateOutputType | null
   _max: BusinessMaxAggregateOutputType | null
@@ -166,6 +194,10 @@ export type BusinessWhereInput = {
   id?: Prisma.StringFilter<"Business"> | string
   name?: Prisma.StringFilter<"Business"> | string
   userId?: Prisma.StringFilter<"Business"> | string
+  stripeCustomerId?: Prisma.StringNullableFilter<"Business"> | string | null
+  stripeSubscriptionId?: Prisma.StringNullableFilter<"Business"> | string | null
+  subscriptionPlan?: Prisma.StringNullableFilter<"Business"> | string | null
+  subscriptionStatus?: Prisma.StringNullableFilter<"Business"> | string | null
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
 
@@ -173,6 +205,10 @@ export type BusinessOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  stripeSubscriptionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  subscriptionPlan?: Prisma.SortOrderInput | Prisma.SortOrder
+  subscriptionStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
 }
 
@@ -183,6 +219,10 @@ export type BusinessWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.BusinessWhereInput[]
   NOT?: Prisma.BusinessWhereInput | Prisma.BusinessWhereInput[]
   name?: Prisma.StringFilter<"Business"> | string
+  stripeCustomerId?: Prisma.StringNullableFilter<"Business"> | string | null
+  stripeSubscriptionId?: Prisma.StringNullableFilter<"Business"> | string | null
+  subscriptionPlan?: Prisma.StringNullableFilter<"Business"> | string | null
+  subscriptionStatus?: Prisma.StringNullableFilter<"Business"> | string | null
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "id" | "userId">
 
@@ -190,6 +230,10 @@ export type BusinessOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  stripeSubscriptionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  subscriptionPlan?: Prisma.SortOrderInput | Prisma.SortOrder
+  subscriptionStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.BusinessCountOrderByAggregateInput
   _max?: Prisma.BusinessMaxOrderByAggregateInput
   _min?: Prisma.BusinessMinOrderByAggregateInput
@@ -202,11 +246,19 @@ export type BusinessScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Business"> | string
   name?: Prisma.StringWithAggregatesFilter<"Business"> | string
   userId?: Prisma.StringWithAggregatesFilter<"Business"> | string
+  stripeCustomerId?: Prisma.StringNullableWithAggregatesFilter<"Business"> | string | null
+  stripeSubscriptionId?: Prisma.StringNullableWithAggregatesFilter<"Business"> | string | null
+  subscriptionPlan?: Prisma.StringNullableWithAggregatesFilter<"Business"> | string | null
+  subscriptionStatus?: Prisma.StringNullableWithAggregatesFilter<"Business"> | string | null
 }
 
 export type BusinessCreateInput = {
   id?: string
   name: string
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  subscriptionPlan?: string | null
+  subscriptionStatus?: string | null
   user: Prisma.UserCreateNestedOneWithoutBusinessInput
 }
 
@@ -214,11 +266,19 @@ export type BusinessUncheckedCreateInput = {
   id?: string
   name: string
   userId: string
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  subscriptionPlan?: string | null
+  subscriptionStatus?: string | null
 }
 
 export type BusinessUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   user?: Prisma.UserUpdateOneRequiredWithoutBusinessNestedInput
 }
 
@@ -226,23 +286,39 @@ export type BusinessUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type BusinessCreateManyInput = {
   id?: string
   name: string
   userId: string
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  subscriptionPlan?: string | null
+  subscriptionStatus?: string | null
 }
 
 export type BusinessUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type BusinessUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type BusinessNullableScalarRelationFilter = {
@@ -254,18 +330,30 @@ export type BusinessCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  stripeCustomerId?: Prisma.SortOrder
+  stripeSubscriptionId?: Prisma.SortOrder
+  subscriptionPlan?: Prisma.SortOrder
+  subscriptionStatus?: Prisma.SortOrder
 }
 
 export type BusinessMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  stripeCustomerId?: Prisma.SortOrder
+  stripeSubscriptionId?: Prisma.SortOrder
+  subscriptionPlan?: Prisma.SortOrder
+  subscriptionStatus?: Prisma.SortOrder
 }
 
 export type BusinessMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  stripeCustomerId?: Prisma.SortOrder
+  stripeSubscriptionId?: Prisma.SortOrder
+  subscriptionPlan?: Prisma.SortOrder
+  subscriptionStatus?: Prisma.SortOrder
 }
 
 export type BusinessCreateNestedOneWithoutUserInput = {
@@ -303,11 +391,19 @@ export type BusinessUncheckedUpdateOneWithoutUserNestedInput = {
 export type BusinessCreateWithoutUserInput = {
   id?: string
   name: string
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  subscriptionPlan?: string | null
+  subscriptionStatus?: string | null
 }
 
 export type BusinessUncheckedCreateWithoutUserInput = {
   id?: string
   name: string
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  subscriptionPlan?: string | null
+  subscriptionStatus?: string | null
 }
 
 export type BusinessCreateOrConnectWithoutUserInput = {
@@ -329,11 +425,19 @@ export type BusinessUpdateToOneWithWhereWithoutUserInput = {
 export type BusinessUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type BusinessUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -342,6 +446,10 @@ export type BusinessSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   id?: boolean
   name?: boolean
   userId?: boolean
+  stripeCustomerId?: boolean
+  stripeSubscriptionId?: boolean
+  subscriptionPlan?: boolean
+  subscriptionStatus?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["business"]>
 
@@ -349,6 +457,10 @@ export type BusinessSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   id?: boolean
   name?: boolean
   userId?: boolean
+  stripeCustomerId?: boolean
+  stripeSubscriptionId?: boolean
+  subscriptionPlan?: boolean
+  subscriptionStatus?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["business"]>
 
@@ -356,6 +468,10 @@ export type BusinessSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   id?: boolean
   name?: boolean
   userId?: boolean
+  stripeCustomerId?: boolean
+  stripeSubscriptionId?: boolean
+  subscriptionPlan?: boolean
+  subscriptionStatus?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["business"]>
 
@@ -363,9 +479,13 @@ export type BusinessSelectScalar = {
   id?: boolean
   name?: boolean
   userId?: boolean
+  stripeCustomerId?: boolean
+  stripeSubscriptionId?: boolean
+  subscriptionPlan?: boolean
+  subscriptionStatus?: boolean
 }
 
-export type BusinessOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "userId", ExtArgs["result"]["business"]>
+export type BusinessOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "userId" | "stripeCustomerId" | "stripeSubscriptionId" | "subscriptionPlan" | "subscriptionStatus", ExtArgs["result"]["business"]>
 export type BusinessInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -385,6 +505,10 @@ export type $BusinessPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     id: string
     name: string
     userId: string
+    stripeCustomerId: string | null
+    stripeSubscriptionId: string | null
+    subscriptionPlan: string | null
+    subscriptionStatus: string | null
   }, ExtArgs["result"]["business"]>
   composites: {}
 }
@@ -812,6 +936,10 @@ export interface BusinessFieldRefs {
   readonly id: Prisma.FieldRef<"Business", 'String'>
   readonly name: Prisma.FieldRef<"Business", 'String'>
   readonly userId: Prisma.FieldRef<"Business", 'String'>
+  readonly stripeCustomerId: Prisma.FieldRef<"Business", 'String'>
+  readonly stripeSubscriptionId: Prisma.FieldRef<"Business", 'String'>
+  readonly subscriptionPlan: Prisma.FieldRef<"Business", 'String'>
+  readonly subscriptionStatus: Prisma.FieldRef<"Business", 'String'>
 }
     
 

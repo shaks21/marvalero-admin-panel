@@ -37,3 +37,8 @@ export type User = Prisma.UserModel
  * 
  */
 export type Business = Prisma.BusinessModel
+/**
+ * Model PasswordResetToken
+ * 
+ */
+export type PasswordResetToken = Prisma.PasswordResetTokenModel

@@ -1,8 +1,14 @@
 // src/admin/admin.service.ts
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Admin, Prisma } from '../generated/prisma/client.js';
 import { AdminUserSearchDto } from './dto/admin-user-search.dto.js';
+import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AdminService {
@@ -54,6 +60,34 @@ export class AdminService {
     return this.prisma.admin.delete({
       where,
     });
+  }
+
+  async getUserById(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        userType: true,
+        status: true,
+        lastLoginAt: true,
+        createdAt: true,
+        business: {
+          select: {
+            name: true,
+            id: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 
   async searchUsers(dto: AdminUserSearchDto) {
@@ -136,5 +170,72 @@ export class AdminService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async forcePasswordReset(userId: string, adminId: string) {
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = await bcrypt.hash(rawToken, 10);
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60), // 1 hour
+      },
+    });
+
+    // await this.logAudit(adminId, 'RESET_PASSWORD', userId);
+
+    /**
+     * IMPORTANT:
+     * Send rawToken via email/SMS
+     * NEVER store or return it again
+     */
+    return { success: true };
+  }
+
+  async changeEmail(userId: string, email: string, adminId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { email },
+    });
+
+    // await this.logAudit(adminId, 'CHANGE_EMAIL', userId, { email });
+
+    return { success: true };
+  }
+
+  async changePhone(userId: string, phone: string, adminId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { phone },
+    });
+
+    // await this.logAudit(adminId, 'CHANGE_PHONE', userId, { phone });
+
+    return { success: true };
+  }
+
+  async changeStatus(
+    userId: string,
+    status: string, // Accept string first
+    adminId: string,
+  ) {
+    // Validate status before calling Prisma
+    const validStatuses = ['ACTIVE', 'SUSPENDED', 'BANNED'];
+
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException(
+        `Invalid status: '${status}'. Must be one of: ${validStatuses.join(', ')}`,
+      );
+    }
+
+    // Now TypeScript knows status is valid
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { status: status as 'ACTIVE' | 'SUSPENDED' | 'BANNED' },
+    });
+
+    return { success: true };
   }
 }

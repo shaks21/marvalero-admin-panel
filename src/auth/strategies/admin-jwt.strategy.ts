@@ -27,10 +27,10 @@ export class AdminJwtStrategy extends PassportStrategy(Strategy, 'admin-jwt') {
     this.logger.debug(`JWT payload received: ${JSON.stringify(payload)}`);
     
     // Debug: Log the actual payload structure
-    console.log('Payload type:', typeof payload.isAdmin);
-    console.log('Payload isAdmin value:', payload.isAdmin);
-    console.log('Payload isAdmin === true:', payload.isAdmin === true);
-    console.log('Payload isAdmin === false:', payload.isAdmin === false);
+    // console.log('Payload type:', typeof payload.isAdmin);
+    // console.log('Payload isAdmin value:', payload.isAdmin);
+    // console.log('Payload isAdmin === true:', payload.isAdmin === true);
+    // console.log('Payload isAdmin === false:', payload.isAdmin === false);
     
     // Check if isAdmin exists and is true
     if (payload.isAdmin !== true) {

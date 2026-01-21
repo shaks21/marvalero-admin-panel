@@ -93,6 +93,8 @@ export class AuditInterceptor implements NestInterceptor {
     //   return;
     // }
 
+    console.log('Logging audit action:', data); // For debugging
+
     await this.prisma.adminAuditLog.create({
       data: {
         adminId: data.adminId,

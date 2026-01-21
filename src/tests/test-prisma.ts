@@ -32,7 +32,7 @@ async function testConnection() {
       const testAdmin = await prisma.admin.create({
         data: {
           email: `test-${Date.now()}@example.com`,
-          passwordHash: 'temporary_test_hash_' + Date.now(),
+          password: 'temporary_test_hash_' + Date.now(),
         },
       });
       console.log('✅ Test admin created with ID:', testAdmin.id);

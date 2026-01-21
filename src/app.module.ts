@@ -7,10 +7,12 @@ import { AuditModule } from './audit/audit.module.js';
 import { PrismaService } from "./prisma/prisma.service.js";
 import { AdminService } from './admin/admin.service.js';  
 import { TestModule } from './test/test.module.js';
+import { StripeModule } from './stripe/stripe.module.js'; 
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    StripeModule,
     AuthModule,
     AdminModule,
     AuditModule,
