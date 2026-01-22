@@ -3,15 +3,16 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { BusinessService } from './business.service.js';
 // import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 // import { RolesGuard } from '../auth/guards/roles.guard.js';
 // import { Roles } from '../auth/decorators/roles.decorator.js';
 import { AdminGuard } from '../../auth/guards/admin.guard.js';
-
 
 @UseGuards(AdminGuard) // Apply guard globally to this controller
 @Controller('admin/business')
@@ -21,6 +22,38 @@ export class BusinessController {
   @Get('businesses')
   getBusinesses() {
     return this.businessService.getBusinesses();
+  }
+
+  @Get('payments')
+  getAllPayments(
+    @Query('limit') limit?: number,
+    @Query('starting_after') cursor?: string,
+  ) {
+    return this.businessService.getAllPayments(limit, cursor);
+  }
+
+  @Get('payments/failed')
+  getAllFailedPayments(
+    @Query('limit') limit?: number,
+    @Query('starting_after') cursor?: string,
+  ) {
+    return this.businessService.getAllFailedPayments(limit, cursor);
+  }
+
+  @Get('disputes')
+  getAllDisputes(
+    @Query('limit') limit?: number,
+    @Query('starting_after') cursor?: string,
+  ) {
+    return this.businessService.getAllDisputes(limit, cursor);
+  }
+
+  @Get('refunds')
+  getAllRefunds(
+    @Query('limit') limit?: number,
+    @Query('starting_after') cursor?: string,
+  ) {
+    return this.businessService.getAllRefunds(limit, cursor);
   }
 
   @Get(':id')
@@ -38,8 +71,26 @@ export class BusinessController {
     return this.businessService.getPayments(id);
   }
 
+  @Get(':id/payments/failed')
+  getFailedPayments(@Param('id') id: string) {
+    return this.businessService.getFailedPayments(id);
+  }
+
   @Patch(':id/cancel-subscription')
   cancelSubscription(@Param('id') id: string, @Req() req) {
     return this.businessService.cancelSubscription(id, req.user.adminId);
+  }
+
+  @Post(':id/payments/:paymentIntentId/refund')
+  refundPayment(
+    @Param('id') businessId: string,
+    @Param('paymentIntentId') paymentIntentId: string,
+  ) {
+    return this.businessService.refundPayment(businessId, paymentIntentId);
+  }
+
+  @Get(':id/disputes')
+  getDisputes(@Param('id') businessId: string) {
+    return this.businessService.getDisputes(businessId);
   }
 }

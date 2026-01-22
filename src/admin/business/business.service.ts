@@ -72,6 +72,23 @@ export class BusinessService {
     return payments.data;
   }
 
+  async getFailedPayments(businessId: string) {
+    const biz = await this.prisma.business.findUnique({
+      where: { id: businessId },
+    });
+    if (!biz?.stripeCustomerId)
+      throw new NotFoundException('Stripe customer not linked');
+
+    const all = await this.stripe.paymentIntents.list({
+      customer: biz.stripeCustomerId,
+    });
+
+    return all.data.filter(
+      (pi) =>
+        pi.status === 'requires_payment_method' || pi.status === 'canceled',
+    );
+  }
+
   async cancelSubscription(businessId: string, adminId: string) {
     const biz = await this.prisma.business.findUnique({
       where: { id: businessId },
@@ -96,5 +113,55 @@ export class BusinessService {
     });
 
     return { success: true, status: canceled.status };
+  }
+
+  async refundPayment(businessId: string, paymentIntentId: string) {
+    const refund = await this.stripe.refunds.create({
+      payment_intent: paymentIntentId,
+    });
+    return refund;
+  }
+
+  async getDisputes(businessId: string) {
+    const biz = await this.prisma.business.findUnique({
+      where: { id: businessId },
+    });
+    if (!biz?.stripeCustomerId)
+      throw new NotFoundException('Stripe customer not linked');
+
+    // list disputes, optionally filtered by PaymentIntent/customer
+    const disputes = await this.stripe.disputes.list({
+      // optionally: { payment_intent: someId, limit: 100 }
+    });
+    return disputes.data;
+  }
+
+  async getAllPayments(limit = 50, starting_after?: string) {
+    const payments = await this.stripe.paymentIntents.list({
+      limit,
+      starting_after,
+    });
+    return payments.data; // 👈 Return the data array only
+  }
+
+  async getAllFailedPayments(limit = 50, starting_after?: string) {
+    const all = await this.stripe.paymentIntents.list({
+      limit,
+      starting_after,
+    });
+    return all.data.filter(
+      (pi) =>
+        pi.status === 'requires_payment_method' || pi.status === 'canceled',
+    );
+  }
+
+  async getAllDisputes(limit = 50, starting_after?: string) {
+    const disputes = await this.stripe.disputes.list({ limit, starting_after });
+    return disputes.data;
+  }
+
+  async getAllRefunds(limit = 50, starting_after?: string) {
+    const refunds = await this.stripe.refunds.list({ limit, starting_after });
+    return refunds.data;
   }
 }

@@ -3,8 +3,8 @@ import { INestApplication } from '@nestjs/common';
 // Supertest often requires a default import or a specific syntax in ESM
 import request from 'supertest';
 // ESM requires explicit extensions for relative imports
-import { AppModule } from '../src/app.module.js';
-import { AuditInterceptor } from '../src/audit/audit.interceptor.js';
+import { AppModule } from '../../src/app.module.js';
+import { AuditInterceptor } from '../../src/audit/audit.interceptor.js';
 
 describe('Admin User Search (e2e)', () => {
   let app: INestApplication;

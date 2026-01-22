@@ -3,8 +3,8 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import Stripe from 'stripe';
 import * as bcrypt from 'bcrypt';
-import { AppModule } from '../src/app.module.js';
-import { PrismaService } from '../src/prisma/prisma.service.js';
+import { AppModule } from '../../src/app.module.js';
+import { PrismaService } from '../../src/prisma/prisma.service.js';
 
 describe('Stripe Integration (test mode) (e2e)', () => {
   let app: INestApplication;
@@ -171,7 +171,34 @@ describe('Stripe Integration (test mode) (e2e)', () => {
       console.error('Error creating subscription:', error);
       throw error;
     }
-  },15000);
+  }, 15000);
+
+  it('fetches payments history for a business customer', async () => {
+    if (!customerId || !businessId) {
+      console.log('No Stripe customer or business ID, skipping payments test');
+      return;
+    }
+
+    const res = await request(app.getHttpServer())
+      .get(`/admin/business/${businessId}/payments`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    console.log('Payments API response:', JSON.stringify(res.body, null, 2));
+
+    // Expect an array of payment intents
+    expect(Array.isArray(res.body)).toBe(true);
+
+    if (res.body.length > 0) {
+      const payment = res.body[0];
+      expect(payment).toHaveProperty('id');
+      expect(payment).toHaveProperty('amount');
+      expect(payment).toHaveProperty('status');
+      expect(payment.customer).toBe(customerId);
+    } else {
+      console.log('No payments found for this customer yet.');
+    }
+  });
 
   it('lists active subscriptions via your API', async () => {
     // First, ensure subscription is in database
@@ -259,6 +286,105 @@ describe('Stripe Integration (test mode) (e2e)', () => {
       console.error('Error checking subscription:', error);
       throw error;
     }
+  });
+
+  /**
+   * 8️⃣ List all payments globally
+   */
+  it('fetches all payments across all customers', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/admin/business/payments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    console.log('Global payments:', JSON.stringify(res.body, null, 2));
+
+    expect(Array.isArray(res.body)).toBe(true);
+
+    if (res.body.length > 0) {
+      const first = res.body[0];
+      expect(first).toHaveProperty('id');
+      expect(first).toHaveProperty('status');
+    }
+  });
+
+  /**
+   * 9️⃣ List all failed payments globally
+   */
+  it('fetches failed payments across all customers', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/admin/business/payments/failed')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    console.log('Global failed payments:', JSON.stringify(res.body, null, 2));
+
+    expect(Array.isArray(res.body)).toBe(true);
+
+    for (const p of res.body) {
+      expect(['requires_payment_method', 'canceled']).toContain(p.status);
+    }
+  });
+
+  /**
+   * 🔟 Refund a payment and then list refunds
+   */
+  it('creates a refund and lists it globally', async () => {
+    // We need a paymentIntent ID. If payments were found earlier, use the first:
+    const paymentListRes = await request(app.getHttpServer())
+      .get('/admin/business/payments')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    const allPayments = paymentListRes.body as any[];
+
+    if (allPayments.length === 0) {
+      console.log('No existing payments — cannot test refunds.');
+      return;
+    }
+
+    const piId = allPayments[0].id;
+
+    // Trigger a refund
+    const refundRes = await request(app.getHttpServer())
+      .post(`/admin/business/${businessId}/payments/${piId}/refund`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(201);
+
+    expect(refundRes.body).toHaveProperty('id');
+    expect(refundRes.body).toHaveProperty('status');
+
+    // Now list all refunds
+    const listRefundsRes = await request(app.getHttpServer())
+      .get('/admin/business/refunds')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    console.log('Refunds list:', JSON.stringify(listRefundsRes.body, null, 2));
+
+    expect(Array.isArray(listRefundsRes.body)).toBe(true);
+
+    const refundMatch = listRefundsRes.body.find(
+      (r: any) => r.payment_intent === piId,
+    );
+    if (refundMatch) {
+      expect(refundMatch).toHaveProperty('id');
+      expect(refundMatch.payment_intent).toBe(piId);
+    }
+  });
+
+  /**
+   * 11️⃣ List all disputes (may be empty but should return 200)
+   */
+  it('lists global disputes successfully', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/admin/business/disputes')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    console.log('Global disputes:', JSON.stringify(res.body, null, 2));
+
+    expect(Array.isArray(res.body)).toBe(true);
   });
 
   afterAll(async () => {

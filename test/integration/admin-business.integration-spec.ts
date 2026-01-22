@@ -2,9 +2,9 @@ import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../src/app.module.js';
-import { AuditInterceptor } from '../src/audit/audit.interceptor.js';
-import { PrismaService } from '../src/prisma/prisma.service.js';
+import { AppModule } from '../../src/app.module.js';
+import { AuditInterceptor } from '../../src/audit/audit.interceptor.js';
+import { PrismaService } from '../../src/prisma/prisma.service.js';
 import Stripe from 'stripe';
 
 // Define the type for our mock

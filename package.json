@@ -16,6 +16,7 @@
     "prisma:seed": "prisma db seed",
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./jest-unit.json",
     "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
+    "test:int": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config ./test/jest.json",
     "test": "npm run test:unit && npm run test:e2e"
   },
   "dependencies": {

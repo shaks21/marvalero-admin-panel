@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../src/app.module.js';
-import { AuditInterceptor } from '../src/audit/audit.interceptor.js';
+import { AppModule } from '../../src/app.module.js';
+import { AuditInterceptor } from '../../src/audit/audit.interceptor.js';
 import { randomInt } from 'crypto';
 
 describe('Admin User Management Actions (e2e)', () => {
@@ -128,12 +128,12 @@ describe('Admin User Management Actions (e2e)', () => {
     expect(res.body.success).toBe(true);
 
     const verify = await request(app.getHttpServer())
-      .get('/admin/users/search')
+      .get(`/admin/users/${targetUserId}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    const user = verify.body.data.find((u: any) => u.id === targetUserId);
-    expect(user.accountStatus).toBe('SUSPENDED');
+    console.log('User after suspension:', verify.body);
+    expect(verify.body.status).toBe('SUSPENDED');
   });
 
   /**
