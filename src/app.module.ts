@@ -8,6 +8,7 @@ import { PrismaService } from "./prisma/prisma.service.js";
 import { AdminService } from './admin/admin.service.js';  
 import { TestModule } from './test/test.module.js';
 import { StripeModule } from './stripe/stripe.module.js'; 
+import { MetricsModule } from './admin/metrics/metrics.module.js';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { StripeModule } from './stripe/stripe.module.js';
     AuthModule,
     AdminModule,
     AuditModule,
+    MetricsModule,
     TestModule,
   ],
   controllers: [AppController],

@@ -50,10 +50,6 @@ describe('Admin User Management Actions (e2e)', () => {
     targetUserId = searchRes.body.data[0].id;
   });
 
-  afterAll(async () => {
-    await app.close();
-  });
-
   /**
    * 1️⃣ Force password reset
    */
@@ -168,5 +164,9 @@ describe('Admin User Management Actions (e2e)', () => {
       .patch(`/admin/users/${targetUserId}/status`)
       .send({ status: 'ACTIVE' })
       .expect(401);
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 });

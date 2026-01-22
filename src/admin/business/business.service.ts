@@ -1,7 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import Stripe from 'stripe';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { jest } from '@jest/globals'; // Add this if you use jest.fn() inside the service itself
+// import { jest } from '@jest/globals'; // Add this if you use jest.fn() inside the service itself
 
 @Injectable()
 export class BusinessService {

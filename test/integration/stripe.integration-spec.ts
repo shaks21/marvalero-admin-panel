@@ -232,7 +232,7 @@ describe('Stripe Integration (test mode) (e2e)', () => {
       // Should return 200 with subscription data
       expect(res.status).toBe(200);
 
-      console.log('API Response body:', JSON.stringify(res.body, null, 2));
+      // console.log('API Response body:', JSON.stringify(res.body, null, 2));
 
       if (Array.isArray(res.body) && res.body.length > 0) {
         expect(res.body[0]).toHaveProperty('id');
@@ -297,7 +297,7 @@ describe('Stripe Integration (test mode) (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    console.log('Global payments:', JSON.stringify(res.body, null, 2));
+    // console.log('Global payments:', JSON.stringify(res.body, null, 2));
 
     expect(Array.isArray(res.body)).toBe(true);
 
@@ -317,7 +317,7 @@ describe('Stripe Integration (test mode) (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    console.log('Global failed payments:', JSON.stringify(res.body, null, 2));
+    // console.log('Global failed payments:', JSON.stringify(res.body, null, 2));
 
     expect(Array.isArray(res.body)).toBe(true);
 
@@ -360,7 +360,7 @@ describe('Stripe Integration (test mode) (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    console.log('Refunds list:', JSON.stringify(listRefundsRes.body, null, 2));
+    // console.log('Refunds list:', JSON.stringify(listRefundsRes.body, null, 2));
 
     expect(Array.isArray(listRefundsRes.body)).toBe(true);
 
@@ -382,7 +382,7 @@ describe('Stripe Integration (test mode) (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    console.log('Global disputes:', JSON.stringify(res.body, null, 2));
+    // console.log('Global disputes:', JSON.stringify(res.body, null, 2));
 
     expect(Array.isArray(res.body)).toBe(true);
   });
