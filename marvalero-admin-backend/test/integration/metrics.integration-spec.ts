@@ -47,32 +47,33 @@ describe('Metrics integration test', () => {
      * Login as admin
      */
     const loginRes = await request(app.getHttpServer())
-      .post('/admin/auth/login')
+      .post('/admin/auth/login') // Adjust this based on your actual auth endpoint
       .send({
         email: 'admin@marvalero.com',
         password: 'admin123',
       });
 
-    adminToken = loginRes.body.accessToken;
+    adminToken = loginRes.body.accessToken || loginRes.body.token;
     if (!adminToken) {
       throw new Error('Admin login failed, no token received');
     }
+    expect(adminToken).toBeDefined();
   });
 
   it('returns user metrics', async () => {
     const res = await request(app.getHttpServer())
-      .get('/admin/metrics/users')
+      .get('/admin/metrics')
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
     expect(res.body).toHaveProperty('totalUsers');
-    expect(res.body).toHaveProperty('active');
-    expect(res.body).toHaveProperty('loggedInToday');
+    expect(res.body).toHaveProperty('activeUsers'); // Changed from 'active'
+    expect(res.body).toHaveProperty('dailyLogins'); // Changed from 'loggedInToday'
   });
 
   it('rejects unauthenticated admin actions', async () => {
     const res = await request(app.getHttpServer())
-      .get('/admin/metrics/users')
+      .get('/admin/metrics')
       .expect(401);
   });
 

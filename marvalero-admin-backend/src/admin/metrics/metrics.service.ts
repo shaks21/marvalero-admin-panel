@@ -9,28 +9,60 @@ export class MetricsService {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
-    const totalUsers = await this.prisma.user.count();
-    const active = await this.prisma.user.count({
-      where: { status: 'ACTIVE' },
-    });
-    const inactive = await this.prisma.user.count({
-      where: { status: { not: 'ACTIVE' } }, // or SUSPENDED/BANNED separately
-    });
-    const loggedInToday = await this.prisma.user.count({
-      where: { lastLoginAt: { gte: startOfDay } },
+    // FIRST, check what enum values you actually have
+    console.log('Checking database state...');
+
+    const [
+      totalUsers,
+      businessUsers,
+      consumerUsers,
+      influencerUsers,
+      activeUsers,
+      inactiveUsers,
+      dailyLogins,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+
+      this.prisma.user.count({
+        where: { userType: 'BUSINESS' },
+      }),
+      this.prisma.user.count({
+        where: { userType: 'CONSUMER' },
+      }),
+      this.prisma.user.count({
+        where: { userType: 'INFLUENCER' },
+      }),
+
+      this.prisma.user.count({
+        where: { status: 'ACTIVE' },
+      }),
+
+      this.prisma.user.count({
+        where: { status: { not: 'ACTIVE' } },
+      }),
+
+      this.prisma.user.count({
+        where: { lastLoginAt: { gte: startOfDay } },
+      }),
+    ]);
+
+    // Get user type distribution dynamically
+    const userTypes = await this.prisma.user.groupBy({
+      by: ['userType'],
+      _count: true,
     });
 
-    const lastLogin = await this.prisma.user.findMany({
-      select: { id: true, email: true, lastLoginAt: true },
-      orderBy: { lastLoginAt: 'desc' },
-    });
+    console.log('Current user types in DB:', userTypes);
 
     return {
       totalUsers,
-      active,
-      inactive,
-      loggedInToday,
-      lastLogin,
+      businessUsers,
+      consumerUsers, 
+      influencerUsers, 
+      activeUsers,
+      inactiveUsers,
+      dailyLogins,
+      userTypeDistribution: userTypes,
     };
   }
 }

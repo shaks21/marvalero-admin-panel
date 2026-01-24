@@ -61,6 +61,7 @@ export class BusinessService {
     const biz = await this.prisma.business.findUnique({
       where: { id: businessId },
     });
+    console.log('Business fetched for payments:', biz);
     if (!biz) throw new NotFoundException('Business not found'); // Business doesn't exist
     if (!biz.stripeCustomerId)
       throw new NotFoundException('Stripe customer not linked'); // Matches test
@@ -68,6 +69,8 @@ export class BusinessService {
     const payments = await this.stripe.paymentIntents.list({
       customer: biz.stripeCustomerId,
     });
+
+    console.log('Fetched payments for business:', businessId, payments.data.length);
 
     return payments.data;
   }

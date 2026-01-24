@@ -10,6 +10,9 @@ import { AdminUserSearchDto } from './dto/admin-user-search.dto.js';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 
+export type UserSortField = 'name' | 'email' | 'createdAt' | 'lastLoginAt';
+export type SortOrder = 'asc' | 'desc';
+
 @Injectable()
 export class AdminService {
   constructor(private prisma: PrismaService) {}
@@ -62,6 +65,134 @@ export class AdminService {
     });
   }
 
+  async getRecentUsers(limit = 5) {
+    const users = await this.prisma.user.findMany({
+      take: limit,
+      orderBy: {
+        lastLoginAt: 'desc',
+      },
+      where: {
+        lastLoginAt: {
+          not: null,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        userType: true,
+        status: true,
+        lastLoginAt: true,
+        business: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    return users.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      userType: user.userType,
+      status: user.status,
+      lastLoginAt: user.lastLoginAt,
+      businessName: user.business?.name,
+    }));
+  }
+
+  async getUsers(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    userType?: string;
+    sortBy?: UserSortField;
+    sortOrder?: SortOrder;
+  }) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      userType,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = params;
+
+    const skip = (page - 1) * limit;
+
+    // Build where clause
+    const where: any = {};
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search } },
+        {
+          business: {
+            name: { contains: search, mode: 'insensitive' },
+          },
+        },
+      ];
+    }
+
+    if (userType) {
+      where.userType = userType;
+    }
+
+    // Build orderBy
+    const orderBy: any = {};
+    orderBy[sortBy] = sortOrder;
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          userType: true,
+          status: true,
+          lastLoginAt: true,
+          createdAt: true,
+          business: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      data: users.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        userType: user.userType,
+        status: user.status,
+        lastLoginAt: user.lastLoginAt,
+        createdAt: user.createdAt,
+        businessName: user.business?.name,
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async getUserById(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -78,6 +209,10 @@ export class AdminService {
           select: {
             name: true,
             id: true,
+            stripeCustomerId: true,
+            stripeSubscriptionId: true,
+            subscriptionPlan: true,
+            subscriptionStatus: true,
           },
         },
       },
@@ -160,7 +295,7 @@ export class AdminService {
         phone: u.phone,
         userType: u.userType,
         accountStatus: u.status,
-        lastLogin: u.lastLoginAt,
+        lastLoginAt: u.lastLoginAt,
         businessName: u.business?.name ?? null,
       })),
       pagination: {

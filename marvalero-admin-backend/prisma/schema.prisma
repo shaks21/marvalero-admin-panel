@@ -30,8 +30,10 @@ model AdminAuditLog {
   createdAt     DateTime  @default(now())
 
   admin         Admin?     @relation(fields: [adminId], references: [id])
+  targetUser    User?      @relation(fields: [targetUserId], references: [id]) 
 
   @@index([adminId])
+  @@index([targetUserId]) 
   @@index([actionType])
   @@index([createdAt])
 }
@@ -49,6 +51,7 @@ model User {
 
   business      Business?
   passwordResets PasswordResetToken[] 
+  auditLogs     AdminAuditLog[]
 }
 
 model Business {
@@ -64,9 +67,9 @@ model Business {
 }
 
 enum UserType {
-  USER
+  CONSUMER
   BUSINESS
-  ADMIN
+  INFLUENCER
 }
 
 enum AccountStatus {

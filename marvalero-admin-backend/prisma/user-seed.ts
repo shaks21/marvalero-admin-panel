@@ -31,21 +31,19 @@ async function main() {
   await prisma.business.deleteMany();
   await prisma.user.deleteMany();
 
-  /**
-   * Admin user - using the email from your test: admin@marvalero.com
-   */
-  const adminPassword = await hashPassword('admin123');
-  const admin = await prisma.user.create({
-    data: {
-      name: 'Admin User',
-      email: 'admin@marvalero.com', // Changed to match your test
-      password: adminPassword,
-      phone: '+1000000000',
-      userType: 'ADMIN',
-      status: 'ACTIVE',
-      lastLoginAt: new Date(),
-    },
-  });
+  // /**
+  //  * Admin user - using the email from your test: admin@marvalero.com
+  //  */
+  // const adminPassword = await hashPassword('admin123');
+  // const admin = await prisma.admin.upsert({
+  //   data: {
+  //     email: 'admin@marvalero.com', // Changed to match your test
+  //     password: adminPassword,
+  //     isActive: true,
+  //     createdAt: new Date(),
+  //     updatedAt: new Date(),
+  //   },
+  // });
 
   /**
    * Regular users with hashed passwords
@@ -60,7 +58,7 @@ async function main() {
         email: 'john@example.com',
         phone: '+123456789',
         password: johnPassword,
-        userType: 'USER',
+        userType: 'CONSUMER',
         status: 'ACTIVE',
         lastLoginAt: new Date('2026-01-10'),
       },
@@ -69,7 +67,7 @@ async function main() {
         email: 'jane@example.com',
         phone: '+987654321',
         password: janePassword,
-        userType: 'USER',
+        userType: 'CONSUMER',
         status: 'SUSPENDED',
         lastLoginAt: new Date('2025-12-20'),
       },
@@ -150,7 +148,7 @@ async function main() {
 
   console.log('✅ Seed completed successfully');
   console.log('📊 Seed Summary:');
-  console.log(`   - Admin: ${admin.email} (password: admin123)`);
+  // console.log(`   - Admin: ${admin.email} (password: admin123)`);
   console.log(`   - Business with Stripe IDs: ${businessUsers[0].email}`);
   console.log(`   - Business without Stripe IDs: ${businessUsers[1].email}`);
   console.log(`   - Total businesses created: ${businessUsers.length}`);

@@ -11,7 +11,7 @@ import { AdminGuard } from '../../auth/guards/admin.guard.js';
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
 
-  @Get('users')
+  @Get()
   getUserStats() {
     return this.metricsService.getUserMetrics();
   }
