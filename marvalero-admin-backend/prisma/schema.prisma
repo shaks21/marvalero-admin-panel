@@ -64,6 +64,38 @@ model Business {
   stripeSubscriptionId String?
   subscriptionPlan     String?
   subscriptionStatus   String?
+
+  transactions         Transaction[]
+}
+
+model Transaction {
+  id               String   @id @default(uuid())
+  stripePaymentId  String   @unique
+  businessId       String?  // Change to optional
+  business         Business? @relation(fields: [businessId], references: [id]) // Change to optional
+  
+  amount           Int      // Stored in cents
+  refundAmount     Int      @default(0)
+  currency         String   @default("usd")
+  status           String
+  
+  // Optional: snapshot of user info in case they change it later
+  userEmail        String?
+  userName         String?
+  
+  // Metadata
+  description      String?
+  metadata         Json?    // Store raw Stripe metadata
+  lastSyncedAt     DateTime @default(now())
+  syncedFromStripe Boolean @default(false)
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([status])
+  @@index([lastSyncedAt])
+  @@index([stripePaymentId])
 }
 
 enum UserType {

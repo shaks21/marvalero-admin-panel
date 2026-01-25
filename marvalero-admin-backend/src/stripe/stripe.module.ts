@@ -1,6 +1,9 @@
 // stripe/stripe.module.ts (if you're keeping it separate)
 import { Module, Global } from '@nestjs/common';
 import Stripe from 'stripe';
+import { StripeSyncController } from './strip-sync.controller.js';
+import { StripeSyncService } from './stripe-sync.service.js';
+
 
 @Global() // Make it global so all modules can use it
 @Module({
@@ -17,7 +20,9 @@ import Stripe from 'stripe';
         });
       },
     },
+    StripeSyncService,
   ],
+  controllers: [StripeSyncController],
   exports: ['STRIPE_CLIENT'],
 })
 export class StripeModule {}

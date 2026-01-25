@@ -199,6 +199,7 @@ export type BusinessWhereInput = {
   subscriptionPlan?: Prisma.StringNullableFilter<"Business"> | string | null
   subscriptionStatus?: Prisma.StringNullableFilter<"Business"> | string | null
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  transactions?: Prisma.TransactionListRelationFilter
 }
 
 export type BusinessOrderByWithRelationInput = {
@@ -210,6 +211,7 @@ export type BusinessOrderByWithRelationInput = {
   subscriptionPlan?: Prisma.SortOrderInput | Prisma.SortOrder
   subscriptionStatus?: Prisma.SortOrderInput | Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
+  transactions?: Prisma.TransactionOrderByRelationAggregateInput
 }
 
 export type BusinessWhereUniqueInput = Prisma.AtLeast<{
@@ -224,6 +226,7 @@ export type BusinessWhereUniqueInput = Prisma.AtLeast<{
   subscriptionPlan?: Prisma.StringNullableFilter<"Business"> | string | null
   subscriptionStatus?: Prisma.StringNullableFilter<"Business"> | string | null
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  transactions?: Prisma.TransactionListRelationFilter
 }, "id" | "userId">
 
 export type BusinessOrderByWithAggregationInput = {
@@ -260,6 +263,7 @@ export type BusinessCreateInput = {
   subscriptionPlan?: string | null
   subscriptionStatus?: string | null
   user: Prisma.UserCreateNestedOneWithoutBusinessInput
+  transactions?: Prisma.TransactionCreateNestedManyWithoutBusinessInput
 }
 
 export type BusinessUncheckedCreateInput = {
@@ -270,6 +274,7 @@ export type BusinessUncheckedCreateInput = {
   stripeSubscriptionId?: string | null
   subscriptionPlan?: string | null
   subscriptionStatus?: string | null
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutBusinessInput
 }
 
 export type BusinessUpdateInput = {
@@ -280,6 +285,7 @@ export type BusinessUpdateInput = {
   subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriptionStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   user?: Prisma.UserUpdateOneRequiredWithoutBusinessNestedInput
+  transactions?: Prisma.TransactionUpdateManyWithoutBusinessNestedInput
 }
 
 export type BusinessUncheckedUpdateInput = {
@@ -290,6 +296,7 @@ export type BusinessUncheckedUpdateInput = {
   stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriptionStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutBusinessNestedInput
 }
 
 export type BusinessCreateManyInput = {
@@ -388,6 +395,22 @@ export type BusinessUncheckedUpdateOneWithoutUserNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.BusinessUpdateToOneWithWhereWithoutUserInput, Prisma.BusinessUpdateWithoutUserInput>, Prisma.BusinessUncheckedUpdateWithoutUserInput>
 }
 
+export type BusinessCreateNestedOneWithoutTransactionsInput = {
+  create?: Prisma.XOR<Prisma.BusinessCreateWithoutTransactionsInput, Prisma.BusinessUncheckedCreateWithoutTransactionsInput>
+  connectOrCreate?: Prisma.BusinessCreateOrConnectWithoutTransactionsInput
+  connect?: Prisma.BusinessWhereUniqueInput
+}
+
+export type BusinessUpdateOneWithoutTransactionsNestedInput = {
+  create?: Prisma.XOR<Prisma.BusinessCreateWithoutTransactionsInput, Prisma.BusinessUncheckedCreateWithoutTransactionsInput>
+  connectOrCreate?: Prisma.BusinessCreateOrConnectWithoutTransactionsInput
+  upsert?: Prisma.BusinessUpsertWithoutTransactionsInput
+  disconnect?: Prisma.BusinessWhereInput | boolean
+  delete?: Prisma.BusinessWhereInput | boolean
+  connect?: Prisma.BusinessWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.BusinessUpdateToOneWithWhereWithoutTransactionsInput, Prisma.BusinessUpdateWithoutTransactionsInput>, Prisma.BusinessUncheckedUpdateWithoutTransactionsInput>
+}
+
 export type BusinessCreateWithoutUserInput = {
   id?: string
   name: string
@@ -395,6 +418,7 @@ export type BusinessCreateWithoutUserInput = {
   stripeSubscriptionId?: string | null
   subscriptionPlan?: string | null
   subscriptionStatus?: string | null
+  transactions?: Prisma.TransactionCreateNestedManyWithoutBusinessInput
 }
 
 export type BusinessUncheckedCreateWithoutUserInput = {
@@ -404,6 +428,7 @@ export type BusinessUncheckedCreateWithoutUserInput = {
   stripeSubscriptionId?: string | null
   subscriptionPlan?: string | null
   subscriptionStatus?: string | null
+  transactions?: Prisma.TransactionUncheckedCreateNestedManyWithoutBusinessInput
 }
 
 export type BusinessCreateOrConnectWithoutUserInput = {
@@ -429,6 +454,7 @@ export type BusinessUpdateWithoutUserInput = {
   stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriptionStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  transactions?: Prisma.TransactionUpdateManyWithoutBusinessNestedInput
 }
 
 export type BusinessUncheckedUpdateWithoutUserInput = {
@@ -438,8 +464,94 @@ export type BusinessUncheckedUpdateWithoutUserInput = {
   stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriptionStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  transactions?: Prisma.TransactionUncheckedUpdateManyWithoutBusinessNestedInput
 }
 
+export type BusinessCreateWithoutTransactionsInput = {
+  id?: string
+  name: string
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  subscriptionPlan?: string | null
+  subscriptionStatus?: string | null
+  user: Prisma.UserCreateNestedOneWithoutBusinessInput
+}
+
+export type BusinessUncheckedCreateWithoutTransactionsInput = {
+  id?: string
+  name: string
+  userId: string
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  subscriptionPlan?: string | null
+  subscriptionStatus?: string | null
+}
+
+export type BusinessCreateOrConnectWithoutTransactionsInput = {
+  where: Prisma.BusinessWhereUniqueInput
+  create: Prisma.XOR<Prisma.BusinessCreateWithoutTransactionsInput, Prisma.BusinessUncheckedCreateWithoutTransactionsInput>
+}
+
+export type BusinessUpsertWithoutTransactionsInput = {
+  update: Prisma.XOR<Prisma.BusinessUpdateWithoutTransactionsInput, Prisma.BusinessUncheckedUpdateWithoutTransactionsInput>
+  create: Prisma.XOR<Prisma.BusinessCreateWithoutTransactionsInput, Prisma.BusinessUncheckedCreateWithoutTransactionsInput>
+  where?: Prisma.BusinessWhereInput
+}
+
+export type BusinessUpdateToOneWithWhereWithoutTransactionsInput = {
+  where?: Prisma.BusinessWhereInput
+  data: Prisma.XOR<Prisma.BusinessUpdateWithoutTransactionsInput, Prisma.BusinessUncheckedUpdateWithoutTransactionsInput>
+}
+
+export type BusinessUpdateWithoutTransactionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  user?: Prisma.UserUpdateOneRequiredWithoutBusinessNestedInput
+}
+
+export type BusinessUncheckedUpdateWithoutTransactionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subscriptionStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+
+/**
+ * Count Type BusinessCountOutputType
+ */
+
+export type BusinessCountOutputType = {
+  transactions: number
+}
+
+export type BusinessCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  transactions?: boolean | BusinessCountOutputTypeCountTransactionsArgs
+}
+
+/**
+ * BusinessCountOutputType without action
+ */
+export type BusinessCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the BusinessCountOutputType
+   */
+  select?: Prisma.BusinessCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * BusinessCountOutputType without action
+ */
+export type BusinessCountOutputTypeCountTransactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TransactionWhereInput
+}
 
 
 export type BusinessSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -451,6 +563,8 @@ export type BusinessSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   subscriptionPlan?: boolean
   subscriptionStatus?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  transactions?: boolean | Prisma.Business$transactionsArgs<ExtArgs>
+  _count?: boolean | Prisma.BusinessCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["business"]>
 
 export type BusinessSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -488,6 +602,8 @@ export type BusinessSelectScalar = {
 export type BusinessOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "userId" | "stripeCustomerId" | "stripeSubscriptionId" | "subscriptionPlan" | "subscriptionStatus", ExtArgs["result"]["business"]>
 export type BusinessInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  transactions?: boolean | Prisma.Business$transactionsArgs<ExtArgs>
+  _count?: boolean | Prisma.BusinessCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type BusinessIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -500,6 +616,7 @@ export type $BusinessPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   name: "Business"
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
+    transactions: Prisma.$TransactionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -904,6 +1021,7 @@ readonly fields: BusinessFieldRefs;
 export interface Prisma__BusinessClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  transactions<T extends Prisma.Business$transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Business$transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TransactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1333,6 +1451,30 @@ export type BusinessDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Limit how many Businesses to delete.
    */
   limit?: number
+}
+
+/**
+ * Business.transactions
+ */
+export type Business$transactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Transaction
+   */
+  select?: Prisma.TransactionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Transaction
+   */
+  omit?: Prisma.TransactionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TransactionInclude<ExtArgs> | null
+  where?: Prisma.TransactionWhereInput
+  orderBy?: Prisma.TransactionOrderByWithRelationInput | Prisma.TransactionOrderByWithRelationInput[]
+  cursor?: Prisma.TransactionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TransactionScalarFieldEnum | Prisma.TransactionScalarFieldEnum[]
 }
 
 /**

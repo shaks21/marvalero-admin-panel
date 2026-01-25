@@ -1,29 +1,145 @@
-import { cn } from '@/lib/utils';
+// components/admin/StatusBadge.tsx
+import { cn } from "@/lib/utils";
+import {
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Clock,
+  RotateCcw,
+  AlertTriangle,
+  ShieldAlert,
+} from "lucide-react";
 
-type StatusType = 'active' | 'disabled' | 'completed' | 'failed' | 'refunded' | 'disputed' | 'pending' | 'cancelled' | 'expired';
+export type StatusType =
+  | "active"
+  | "inactive"
+  | "suspended"
+  | "banned" // User statuses
+  | "completed"
+  | "failed"
+  | "canceled"
+  | "processing"
+  | "refunded"
+  | "disputed" // Payment statuses
+  | "pending"
+  | "success"
+  | "error"
+  | "warning" // Generic statuses
+  | string;
 
 interface StatusBadgeProps {
   status: StatusType;
   className?: string;
 }
 
-const statusConfig: Record<StatusType, { label: string; className: string }> = {
-  active: { label: 'Active', className: 'status-active' },
-  disabled: { label: 'Disabled', className: 'status-inactive' },
-  completed: { label: 'Completed', className: 'status-active' },
-  failed: { label: 'Failed', className: 'status-inactive' },
-  refunded: { label: 'Refunded', className: 'status-pending' },
-  disputed: { label: 'Disputed', className: 'status-inactive' },
-  pending: { label: 'Pending', className: 'status-pending' },
-  cancelled: { label: 'Cancelled', className: 'status-inactive' },
-  expired: { label: 'Expired', className: 'status-inactive' },
+const statusConfig: Record<
+  string,
+  { label: string; icon?: React.ReactNode; className: string }
+> = {
+  // User statuses
+  active: {
+    label: "Active",
+    icon: <CheckCircle className="h-3 w-3" />,
+    className: "bg-status-active/10 text-status-active",
+  },
+  inactive: {
+    label: "Inactive",
+    icon: <Clock className="h-3 w-3" />,
+    className: "bg-status-inactive/10 text-status-inactive",
+  },
+  suspended: {
+    label: "Suspended",
+    icon: <AlertCircle className="h-3 w-3" />,
+    className: "bg-status-suspended/10 text-status-suspended",
+  },
+  banned: {
+    label: "Banned",
+    icon: <XCircle className="h-3 w-3" />,
+    className: "bg-status-banned/10 text-status-banned",
+  },
+
+  // Payment statuses
+  completed: {
+    label: "Completed",
+    icon: <CheckCircle className="h-3 w-3" />,
+    className: "bg-status-active/10 text-status-active",
+  },
+  succeeded: {
+    label: "Completed",
+    icon: <CheckCircle className="h-3 w-3" />,
+    className: "bg-status-active/10 text-status-active",
+  },
+  failed: {
+    label: "Failed",
+    icon: <XCircle className="h-3 w-3" />,
+    className: "bg-status-banned/10 text-status-banned",
+  },
+  canceled: {
+    label: "Canceled",
+    icon: <XCircle className="h-3 w-3" />,
+    className: "bg-status-banned/10 text-status-banned",
+  },
+  processing: {
+    label: "Processing",
+    icon: <Clock className="h-3 w-3" />,
+    className: "bg-chart-3/10 text-chart-3",
+  },
+  refunded: {
+    label: "Refunded",
+    icon: <RotateCcw className="h-3 w-3" />,
+    className: "bg-chart-4/10 text-chart-4",
+  },
+  disputed: {
+    label: "Disputed",
+    icon: <AlertTriangle className="h-3 w-3" />,
+    className: "bg-chart-5/10 text-chart-5",
+  },
+  requires_action: {
+    label: "Requires Action",
+    icon: <AlertCircle className="h-3 w-3" />,
+    className: "bg-status-suspended/10 text-status-suspended",
+  },
+  requires_capture: {
+    label: "Requires Capture",
+    icon: <ShieldAlert className="h-3 w-3" />,
+    className: "bg-chart-2/10 text-chart-2",
+  },
+
+  // Generic
+  pending: {
+    label: "Pending",
+    icon: <Clock className="h-3 w-3" />,
+    className: "bg-chart-3/10 text-chart-3",
+  },
+  success: {
+    label: "Success",
+    icon: <CheckCircle className="h-3 w-3" />,
+    className: "bg-status-active/10 text-status-active",
+  },
+  error: {
+    label: "Error",
+    icon: <XCircle className="h-3 w-3" />,
+    className: "bg-status-banned/10 text-status-banned",
+  },
+  warning: {
+    label: "Warning",
+    icon: <AlertTriangle className="h-3 w-3" />,
+    className: "bg-chart-5/10 text-chart-5",
+  },
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const config = statusConfig[status];
-  
+  if (status == null) {
+    return null;
+  }
+  const config = statusConfig[status.toLowerCase()] || {
+    label: status,
+    className: "bg-muted text-muted-foreground",
+  };
+
   return (
-    <span className={cn('status-badge', config.className, className)}>
+    <span className={cn("status-badge gap-1", config.className, className)}>
+      {config.icon}
       {config.label}
     </span>
   );

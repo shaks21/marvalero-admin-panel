@@ -1,21 +1,53 @@
-import { Users, Building2, User, Star, UserCheck, UserX, LogIn } from 'lucide-react';
-import { AdminLayout } from '@/components/admin/AdminLayout';
-import { StatCard } from '@/components/admin/StatCard';
-import { mockDashboardStats, mockUsers } from '@/data/mockData';
-import { formatDistanceToNow } from 'date-fns';
+import {
+  Users,
+  Building2,
+  User,
+  Star,
+  UserCheck,
+  UserX,
+  LogIn,
+} from "lucide-react";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { StatCard } from "@/components/admin/StatCard";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useRecentUsers } from "@/hooks/useUsers";
+import { formatDistanceToNow, parseISO } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
+import { UserTypeBadge } from "@/components/admin/UserTypeBadge";
 
 export default function Dashboard() {
-  const recentLogins = mockUsers
-    .filter((user) => user.lastLoginAt)
-    .sort((a, b) => new Date(b.lastLoginAt!).getTime() - new Date(a.lastLoginAt!).getTime())
-    .slice(0, 5);
+  const {
+    stats,
+    loading: statsLoading,
+    error: statsError,
+  } = useDashboardStats();
+  const {
+    users: recentLogins,
+    loading: usersLoading,
+    error: usersError,
+  } = useRecentUsers(3);
+
+  // Show loading or error states
+  if (statsLoading || usersLoading)
+    return <div className="p-4">Loading dashboard...</div>;
+  if (statsError)
+    return (
+      <div className="p-4 text-red-500">Error loading stats: {statsError}</div>
+    );
+  if (usersError)
+    return (
+      <div className="p-4 text-red-500">Error loading users: {usersError}</div>
+    );
+  if (!stats) return <div className="p-4">No stats available</div>;
 
   return (
     <AdminLayout>
       <div className="space-y-8">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard Overview</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            Dashboard Overview
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Monitor platform usage and user activity
           </p>
@@ -25,22 +57,22 @@ export default function Dashboard() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Users"
-            value={mockDashboardStats.totalUsers}
+            value={stats.totalUsers}
             icon={<Users className="h-6 w-6 text-primary" />}
           />
           <StatCard
             title="Business Users"
-            value={mockDashboardStats.businessUsers}
+            value={stats.businessUsers}
             icon={<Building2 className="h-6 w-6 text-chart-1" />}
           />
           <StatCard
             title="Consumers"
-            value={mockDashboardStats.consumerUsers}
+            value={stats.consumerUsers}
             icon={<User className="h-6 w-6 text-chart-2" />}
           />
           <StatCard
             title="Influencers"
-            value={mockDashboardStats.influencerUsers}
+            value={stats.influencerUsers}
             icon={<Star className="h-6 w-6 text-chart-4" />}
           />
         </div>
@@ -48,19 +80,19 @@ export default function Dashboard() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard
             title="Active Users"
-            value={mockDashboardStats.activeUsers}
+            value={stats.activeUsers}
             icon={<UserCheck className="h-6 w-6 text-status-active" />}
-            subtitle={`${Math.round((mockDashboardStats.activeUsers / mockDashboardStats.totalUsers) * 100)}% of total`}
+            subtitle={`${Math.round((stats.activeUsers / stats.totalUsers) * 100)}% of total`}
           />
           <StatCard
             title="Inactive Users"
-            value={mockDashboardStats.inactiveUsers}
+            value={stats.inactiveUsers}
             icon={<UserX className="h-6 w-6 text-status-inactive" />}
-            subtitle={`${Math.round((mockDashboardStats.inactiveUsers / mockDashboardStats.totalUsers) * 100)}% of total`}
+            subtitle={`${Math.round((stats.inactiveUsers / stats.totalUsers) * 100)}% of total`}
           />
           <StatCard
             title="Daily Logins"
-            value={mockDashboardStats.dailyLogins}
+            value={stats.dailyLogins}
             icon={<LogIn className="h-6 w-6 text-chart-3" />}
             subtitle="Users logged in today"
           />
@@ -68,8 +100,12 @@ export default function Dashboard() {
 
         {/* Recent Activity */}
         <div className="admin-card">
-          <h2 className="text-lg font-semibold text-foreground">Recent Logins</h2>
-          <p className="text-sm text-muted-foreground">Users who logged in recently</p>
+          <h2 className="text-lg font-semibold text-foreground">
+            Recent Logins
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Users who logged in recently
+          </p>
           <div className="mt-4 overflow-hidden rounded-lg border">
             <table className="admin-table">
               <thead className="bg-muted/50">
@@ -84,13 +120,24 @@ export default function Dashboard() {
                   <tr key={user.id}>
                     <td>
                       <div>
-                        <p className="font-medium text-foreground">{user.name}</p>
-                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                        <p className="font-medium text-foreground">
+                          {user.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {user.email}
+                        </p>
                       </div>
                     </td>
-                    <td className="capitalize">{user.type}</td>
+                    <td>
+                      {<UserTypeBadge type={user.userType} />}
+                    </td>
                     <td className="text-muted-foreground">
-                      {formatDistanceToNow(new Date(user.lastLoginAt!), { addSuffix: true })}
+                      {user.lastLoginAt
+                        ? formatDistanceToNow(
+                            toZonedTime(user.lastLoginAt, "UTC"), // Convert UTC to local time
+                            { addSuffix: true },
+                          )
+                        : "Never"}
                     </td>
                   </tr>
                 ))}

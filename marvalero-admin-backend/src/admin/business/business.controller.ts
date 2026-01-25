@@ -1,3 +1,5 @@
+
+  // src/admin/business/business.controller.ts
 import {
   Controller,
   Get,
@@ -25,11 +27,20 @@ export class BusinessController {
   }
 
   @Get('payments')
-  getAllPayments(
-    @Query('limit') limit?: number,
+  async getAllPayments(
+    @Query('limit') limit?: string, // Queries come in as strings
     @Query('starting_after') cursor?: string,
   ) {
-    return this.businessService.getAllPayments(limit, cursor);
+    const result = await this.businessService.getAllPayments(
+      limit ? parseInt(limit) : 50,
+      cursor,
+    );
+    return result; // Service will now return the full object
+  }
+
+  @Get('payments/stats')
+  getGlobalPaymentStats() {
+    return this.businessService.getGlobalPaymentStats();
   }
 
   @Get('payments/failed')
@@ -38,6 +49,13 @@ export class BusinessController {
     @Query('starting_after') cursor?: string,
   ) {
     return this.businessService.getAllFailedPayments(limit, cursor);
+  }
+
+  @Post('payments/:paymentIntentId/refund')
+  refundPayment(
+    @Param('paymentIntentId') paymentIntentId: string,
+  ) {
+    return this.businessService.refundPayment(paymentIntentId);
   }
 
   @Get('disputes')
@@ -80,15 +98,7 @@ export class BusinessController {
   cancelSubscription(@Param('id') id: string, @Req() req) {
     return this.businessService.cancelSubscription(id, req.user.adminId);
   }
-
-  @Post(':id/payments/:paymentIntentId/refund')
-  refundPayment(
-    @Param('id') businessId: string,
-    @Param('paymentIntentId') paymentIntentId: string,
-  ) {
-    return this.businessService.refundPayment(businessId, paymentIntentId);
-  }
-
+ 
   @Get(':id/disputes')
   getDisputes(@Param('id') businessId: string) {
     return this.businessService.getDisputes(businessId);

@@ -38,6 +38,11 @@ export type User = Prisma.UserModel
  */
 export type Business = Prisma.BusinessModel
 /**
+ * Model Transaction
+ * 
+ */
+export type Transaction = Prisma.TransactionModel
+/**
  * Model PasswordResetToken
  * 
  */

@@ -1,12 +1,23 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Phone, Calendar, Key, UserX, UserCheck, CreditCard, Building2 } from 'lucide-react';
-import { AdminLayout } from '@/components/admin/AdminLayout';
-import { StatusBadge } from '@/components/admin/StatusBadge';
-import { UserTypeBadge } from '@/components/admin/UserTypeBadge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+// src/pages/admin/UserDetail.tsx
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Mail,
+  Phone,
+  Calendar,
+  Key,
+  UserX,
+  UserCheck,
+  CreditCard,
+  Building2,
+} from "lucide-react";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { StatusBadge } from "@/components/admin/StatusBadge";
+import { UserTypeBadge } from "@/components/admin/UserTypeBadge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +25,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,22 +35,110 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { mockUsers, mockPayments } from '@/data/mockData';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
+} from "@/components/ui/alert-dialog";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { fetchWithAuth } from "@/lib/api";
+import type { User } from "@/hooks/useUsers";
+import { formatStripeDate, safeFormatDate } from "@/lib/utils";
+
+interface ApiUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  userType: "USER" | "BUSINESS" | "INFLUENCER";
+  status: "ACTIVE" | "SUSPENDED" | "BANNED";
+  lastLoginAt: string | null;
+  createdAt: string;
+  business: {
+    id: string;
+    name: string;
+    stripeCustomerId: string;
+    stripeSubscriptionId: string;
+    subscriptionPlan: string;
+    subscriptionStatus: string;
+  } | null;
+}
+
+interface Payment {
+  id: string;
+  description: string;
+  amount: number;
+  currency: string;
+  status: string;
+  created: string;
+}
 
 export default function UserDetail() {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const user = mockUsers.find((u) => u.id === userId);
+  const { token } = useAuth();
+
+  const [user, setUser] = useState<ApiUser | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showPhoneDialog, setShowPhoneDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [showCancelSubDialog, setShowCancelSubDialog] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [newPhone, setNewPhone] = useState('');
+  const [newEmail, setNewEmail] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+
+  useEffect(() => {
+    if (!token || !userId) return;
+
+    const fetchUserData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch user details
+        const userData = await fetchWithAuth<ApiUser>(
+          `/admin/users/${userId}`,
+          token,
+        );
+        setUser(userData);
+
+        console.log("Fetched user data:", userData);
+
+        // Fetch payments for business users
+        if (userData.userType === "BUSINESS" && userData.business) {
+          try {
+            const paymentsData = await fetchWithAuth<Payment[]>(
+              `/admin/business/${userData.business.id}/payments`,
+              token,
+            );
+            console.log("Fetched payments data:", paymentsData);
+            setPayments(paymentsData);
+          } catch (error) {
+            console.error("Error fetching payments:", error);
+            setPayments([]);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        toast.error("Failed to load user data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [token, userId]);
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-lg font-semibold">Loading user...</h2>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   if (!user) {
     return (
@@ -47,8 +146,10 @@ export default function UserDetail() {
         <div className="flex min-h-[400px] items-center justify-center">
           <div className="text-center">
             <h2 className="text-lg font-semibold">User not found</h2>
-            <p className="text-muted-foreground">The requested user does not exist.</p>
-            <Button className="mt-4" onClick={() => navigate('/admin/users')}>
+            <p className="text-muted-foreground">
+              The requested user does not exist.
+            </p>
+            <Button className="mt-4" onClick={() => navigate("/admin/users")}>
               Back to Users
             </Button>
           </div>
@@ -57,37 +158,112 @@ export default function UserDetail() {
     );
   }
 
-  const userPayments = mockPayments.filter((p) => p.userId === user.id);
-
-  const handleResetPassword = () => {
-    toast.success('Password reset email sent to ' + user.email);
+  // Map backend userType to frontend type for UserTypeBadge
+  const getFrontendUserType = (
+    userType: ApiUser["userType"],
+  ): "business" | "consumer" | "influencer" => {
+    switch (userType) {
+      case "BUSINESS":
+        return "business";
+      case "USER":
+        return "consumer";
+      case "INFLUENCER":
+        return "influencer";
+      default:
+        return "consumer";
+    }
   };
 
-  const handleChangeEmail = () => {
-    if (newEmail) {
-      toast.success('Email changed from ' + user.email + ' to ' + newEmail);
+  const handleResetPassword = async () => {
+    try {
+      if (!user.email || !token) return;
+      await fetchWithAuth(`/admin/users/${user.id}/reset-password`, token, {
+        method: "POST",
+      });
+      toast.success("Password reset email sent to " + user.email);
+    } catch (error) {
+      toast.error("Failed to reset password");
+      console.error("Password reset error:", error);
+    }
+  };
+
+  const handleChangeEmail = async () => {
+    if (!newEmail || !token) return;
+
+    try {
+      await fetchWithAuth(`/admin/users/${user.id}/email`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ email: newEmail }),
+      });
+      toast.success("Email changed from " + user.email + " to " + newEmail);
+      setUser({ ...user, email: newEmail });
       setShowEmailDialog(false);
-      setNewEmail('');
+      setNewEmail("");
+    } catch (error) {
+      toast.error("Failed to change email");
+      console.error("Email change error:", error);
     }
   };
 
-  const handleChangePhone = () => {
-    if (newPhone) {
-      toast.success('Phone changed from ' + user.phone + ' to ' + newPhone);
+  const handleChangePhone = async () => {
+    if (!newPhone || !token) return;
+
+    try {
+      await fetchWithAuth(`/admin/users/${user.id}/phone`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ phone: newPhone }),
+      });
+      toast.success("Phone changed from " + user.phone + " to " + newPhone);
+      setUser({ ...user, phone: newPhone });
       setShowPhoneDialog(false);
-      setNewPhone('');
+      setNewPhone("");
+    } catch (error) {
+      toast.error("Failed to change phone");
+      console.error("Phone change error:", error);
     }
   };
 
-  const handleToggleStatus = () => {
-    const action = user.status === 'active' ? 'disabled' : 'enabled';
-    toast.success(`Account ${action} for ${user.name}`);
-    setShowStatusDialog(false);
+  const handleToggleStatus = async () => {
+    const newStatus = user.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
+    if (!token) return;
+
+    try {
+      await fetchWithAuth(`/admin/users/${user.id}/status`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ status: newStatus }),
+      });
+      toast.success(
+        `Account ${newStatus === "ACTIVE" ? "enabled" : "disabled"} for ${user.name}`,
+      );
+      setUser({ ...user, status: newStatus });
+      setShowStatusDialog(false);
+    } catch (error) {
+      toast.error("Failed to update account status");
+      console.error("Status change error:", error);
+    }
   };
 
-  const handleCancelSubscription = () => {
-    toast.success('Subscription cancelled for ' + user.businessName);
-    setShowCancelSubDialog(false);
+  const handleCancelSubscription = async () => {
+    if (!user.business || !token) return;
+
+    try {
+      await fetchWithAuth(
+        `/admin/business/${user.id}/cancel-subscription`,
+        token,
+        { method: "PATCH" },
+      );
+      toast.success("Subscription cancelled for " + user.business.name);
+      setShowCancelSubDialog(false);
+      // Refresh user data to update subscription status
+      const updatedUser = await fetchWithAuth<ApiUser>(
+        `/admin/users/${userId}`,
+        token,
+      );
+      setUser(updatedUser);
+    } catch (error) {
+      toast.error("Failed to cancel subscription");
+      console.error("Cancel subscription error:", error);
+    }
   };
 
   return (
@@ -95,13 +271,19 @@ export default function UserDetail() {
       <div className="space-y-6">
         {/* Back Button & Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/admin/users')}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/admin/users")}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">{user.name}</h1>
-              <UserTypeBadge type={user.type} />
+              <h1 className="text-2xl font-bold text-foreground">
+                {user.name}
+              </h1>
+              <UserTypeBadge type={getFrontendUserType(user.userType)} />
               <StatusBadge status={user.status} />
             </div>
             <p className="text-sm text-muted-foreground">User ID: {user.id}</p>
@@ -131,7 +313,9 @@ export default function UserDetail() {
                 <Calendar className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">Joined</p>
-                  <p className="font-medium">{format(new Date(user.createdAt), 'MMM d, yyyy')}</p>
+                  <p className="font-medium">
+                    {safeFormatDate(user.createdAt, "MMM d, yyyy")}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
@@ -139,18 +323,19 @@ export default function UserDetail() {
                 <div>
                   <p className="text-xs text-muted-foreground">Last Login</p>
                   <p className="font-medium">
-                    {user.lastLoginAt
-                      ? format(new Date(user.lastLoginAt), 'MMM d, yyyy HH:mm')
-                      : 'Never'}
+                    {safeFormatDate(user.lastLoginAt, "MMM d, yyyy HH:mm") ||
+                      "Never"}
                   </p>
                 </div>
               </div>
-              {user.businessName && (
+              {user.business && (
                 <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3 sm:col-span-2">
                   <Building2 className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Business Name</p>
-                    <p className="font-medium">{user.businessName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Business Name
+                    </p>
+                    <p className="font-medium">{user.business.name}</p>
                   </div>
                 </div>
               )}
@@ -180,7 +365,7 @@ export default function UserDetail() {
                 <Mail className="mr-2 h-4 w-4" />
                 Change Email
               </Button>
-              {(user.type === 'business' || user.type === 'consumer') && (
+              {(user.userType === "BUSINESS" || user.userType === "USER") && (
                 <Button
                   variant="outline"
                   className="w-full justify-start"
@@ -194,11 +379,11 @@ export default function UserDetail() {
                 </Button>
               )}
               <Button
-                variant={user.status === 'active' ? 'destructive' : 'default'}
+                variant={user.status === "ACTIVE" ? "destructive" : "default"}
                 className="w-full justify-start"
                 onClick={() => setShowStatusDialog(true)}
               >
-                {user.status === 'active' ? (
+                {user.status === "ACTIVE" ? (
                   <>
                     <UserX className="mr-2 h-4 w-4" />
                     Disable Account
@@ -215,15 +400,20 @@ export default function UserDetail() {
         </div>
 
         {/* Subscription (Business only) */}
-        {user.type === 'business' && user.subscription && (
+        {user.userType === "BUSINESS" && user.business && (
           <div className="admin-card">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold">Subscription</h2>
-                <p className="text-sm text-muted-foreground">Current subscription plan and status</p>
+                <p className="text-sm text-muted-foreground">
+                  Current subscription plan and status
+                </p>
               </div>
-              {user.subscription.status === 'active' && (
-                <Button variant="destructive" onClick={() => setShowCancelSubDialog(true)}>
+              {user.business.subscriptionStatus === "active" && (
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowCancelSubDialog(true)}
+                >
                   Cancel Subscription
                 </Button>
               )}
@@ -231,69 +421,84 @@ export default function UserDetail() {
             <div className="mt-4 grid gap-4 sm:grid-cols-4">
               <div className="rounded-lg bg-muted/50 p-3">
                 <p className="text-xs text-muted-foreground">Plan</p>
-                <p className="font-semibold">{user.subscription.plan}</p>
+                <p className="font-semibold">
+                  {user.business.subscriptionPlan}
+                </p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
                 <p className="text-xs text-muted-foreground">Status</p>
-                <StatusBadge status={user.subscription.status} />
+                <StatusBadge status={user.business.subscriptionStatus} />
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-xs text-muted-foreground">Start Date</p>
-                <p className="font-medium">{user.subscription.startDate}</p>
+                <p className="text-xs text-muted-foreground">
+                  Stripe Customer ID
+                </p>
+                <p className="font-mono text-xs truncate">
+                  {user.business.stripeCustomerId || "Not set"}
+                </p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-xs text-muted-foreground">Stripe ID</p>
-                <p className="font-mono text-xs">{user.subscription.stripeSubscriptionId}</p>
+                <p className="text-xs text-muted-foreground">
+                  Stripe Subscription ID
+                </p>
+                <p className="font-mono text-xs truncate">
+                  {user.business.stripeSubscriptionId || "Not set"}
+                </p>
               </div>
             </div>
           </div>
         )}
 
         {/* Payments */}
-        <div className="admin-card">
-          <div className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold">Payment History</h2>
-          </div>
-          <div className="mt-4 overflow-hidden rounded-lg border">
-            <table className="admin-table">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th>Stripe ID</th>
-                  <th>Description</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {userPayments.length === 0 ? (
+        {user.userType === "BUSINESS" && (
+          <div className="admin-card">
+            <div className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Payment History</h2>
+            </div>
+            <div className="mt-4 overflow-hidden rounded-lg border">
+              <table className="admin-table">
+                <thead className="bg-muted/50">
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                      No payment history
-                    </td>
+                    <th>Stripe ID</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
                   </tr>
-                ) : (
-                  userPayments.map((payment) => (
-                    <tr key={payment.id}>
-                      <td className="font-mono text-xs">{payment.stripePaymentId}</td>
-                      <td>{payment.description}</td>
-                      <td className="font-medium">
-                        ${payment.amount.toFixed(2)} {payment.currency}
-                      </td>
-                      <td>
-                        <StatusBadge status={payment.status} />
-                      </td>
-                      <td className="text-muted-foreground">
-                        {format(new Date(payment.createdAt), 'MMM d, yyyy')}
+                </thead>
+                <tbody>
+                  {payments.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="py-8 text-center text-muted-foreground"
+                      >
+                        No payment history
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    payments.map((payment) => (
+                      <tr key={payment.id}>
+                        <td className="font-mono text-xs">{payment.id}</td>
+                        <td>{payment.description}</td>
+                        <td className="font-medium">
+                          ${payment.amount.toFixed(2)} {payment.currency}
+                        </td>
+                        <td>
+                          <StatusBadge status={payment.status} />
+                        </td>
+                        <td className="text-muted-foreground">
+                          {formatStripeDate(payment.created, "MMM d, yyyy")}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Email Dialog */}
@@ -302,7 +507,8 @@ export default function UserDetail() {
           <DialogHeader>
             <DialogTitle>Change Email Address</DialogTitle>
             <DialogDescription>
-              Update the email address for {user.name}. This action will be logged.
+              Update the email address for {user.name}. This action will be
+              logged.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -313,13 +519,19 @@ export default function UserDetail() {
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
               className="mt-2"
+              placeholder="Enter new email"
             />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEmailDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleChangeEmail}>Save Changes</Button>
+            <Button
+              onClick={handleChangeEmail}
+              disabled={!newEmail || newEmail === user.email}
+            >
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -330,7 +542,8 @@ export default function UserDetail() {
           <DialogHeader>
             <DialogTitle>Change Phone Number</DialogTitle>
             <DialogDescription>
-              Update the phone number for {user.name}. This action will be logged.
+              Update the phone number for {user.name}. This action will be
+              logged.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -341,13 +554,19 @@ export default function UserDetail() {
               value={newPhone}
               onChange={(e) => setNewPhone(e.target.value)}
               className="mt-2"
+              placeholder="Enter new phone number"
             />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPhoneDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleChangePhone}>Save Changes</Button>
+            <Button
+              onClick={handleChangePhone}
+              disabled={!newPhone || newPhone === user.phone}
+            >
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -357,10 +576,10 @@ export default function UserDetail() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {user.status === 'active' ? 'Disable Account' : 'Enable Account'}
+              {user.status === "ACTIVE" ? "Disable Account" : "Enable Account"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {user.status === 'active'
+              {user.status === "ACTIVE"
                 ? `Are you sure you want to disable the account for ${user.name}? They will no longer be able to log in.`
                 : `Are you sure you want to enable the account for ${user.name}? They will be able to log in again.`}
             </AlertDialogDescription>
@@ -368,33 +587,38 @@ export default function UserDetail() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleToggleStatus}>
-              {user.status === 'active' ? 'Disable' : 'Enable'}
+              {user.status === "ACTIVE" ? "Disable" : "Enable"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Cancel Subscription Confirmation */}
-      <AlertDialog open={showCancelSubDialog} onOpenChange={setShowCancelSubDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to cancel the subscription for {user.businessName}? This action
-              cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleCancelSubscription}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Cancel Subscription
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {user.business && user.business.subscriptionStatus === "active" && (
+        <AlertDialog
+          open={showCancelSubDialog}
+          onOpenChange={setShowCancelSubDialog}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to cancel the subscription for{" "}
+                {user.business.name}? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleCancelSubscription}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Cancel Subscription
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </AdminLayout>
   );
 }

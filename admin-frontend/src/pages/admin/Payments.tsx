@@ -1,16 +1,17 @@
-import { useState, useMemo } from 'react';
-import { RefreshCw, DollarSign } from 'lucide-react';
-import { AdminLayout } from '@/components/admin/AdminLayout';
-import { SearchInput } from '@/components/admin/SearchInput';
-import { StatusBadge } from '@/components/admin/StatusBadge';
-import { Button } from '@/components/ui/button';
+// src/pages/admin/Payments.tsx
+import { useState, useEffect } from "react";
+import { RefreshCw, DollarSign, Loader2, Info } from "lucide-react";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { SearchInput } from "@/components/admin/SearchInput";
+import { StatusBadge } from "@/components/admin/StatusBadge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,42 +21,175 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { mockPayments, type PaymentStatus, type Payment } from '@/data/mockData';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
+} from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import {
+  usePayments,
+  usePaymentStats,
+  type Payment,
+  type PaymentStatus,
+} from "@/hooks/usePayments";
+import { useAuth } from "@/hooks/useAuth";
+import { fetchWithAuth, postWithAuth } from "@/lib/api";
+
+// Helper function to format Stripe amount (cents to dollars)
+const formatAmount = (amount: number, currency: string = "usd") => {
+  return `$${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;
+};
+
+// Helper function to get display status
+const getDisplayStatus = (status: PaymentStatus): string => {
+  const statusMap: Record<PaymentStatus, string> = {
+    succeeded: "Completed",
+    requires_payment_method: "Failed",
+    canceled: "Canceled",
+    processing: "Processing",
+    requires_action: "Requires Action",
+    requires_capture: "Requires Capture",
+    disputed: "Disputed",
+    refunded: "Refunded",
+  };
+  return statusMap[status] || status;
+};
 
 export default function Payments() {
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<PaymentStatus | 'all'>('all');
+  const { token } = useAuth();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<PaymentStatus | "all">(
+    "all",
+  );
   const [refundPayment, setRefundPayment] = useState<Payment | null>(null);
+  const [refunding, setRefunding] = useState(false);
 
-  const filteredPayments = useMemo(() => {
-    return mockPayments.filter((payment) => {
-      const searchLower = search.toLowerCase();
-      const matchesSearch =
-        !search ||
-        payment.userName.toLowerCase().includes(searchLower) ||
-        payment.userEmail.toLowerCase().includes(searchLower) ||
-        payment.stripePaymentId.toLowerCase().includes(searchLower);
+  const { payments, loading, error, hasMore, loadMore } = usePayments({
+    limit: 50,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    search: search || undefined,
+  });
 
-      const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
+  const { stats, loading: statsLoading } = usePaymentStats();
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [search, statusFilter]);
+  const handleRefund = async () => {
+    if (!refundPayment || !token) return;
 
-  const handleRefund = () => {
-    if (refundPayment) {
+    try {
+      setRefunding(true);
+
+      console.log("Initiating refund for:", refundPayment.stripePaymentId);
+
+      // Use the correct endpoint - no businessId needed anymore
+      await postWithAuth(
+        `/admin/business/payments/${refundPayment.stripePaymentId}/refund`,
+        token,
+      );
+
       toast.success(`Refund initiated for ${refundPayment.stripePaymentId}`);
       setRefundPayment(null);
+
+      // Refresh the payments list after successful refund
+      toast.info("Refund processed successfully");
+
+      // You might want to add a refresh function to your usePayments hook
+      // Or trigger a refetch
+      window.location.reload(); // Simple refresh for now
+    } catch (error: any) {
+      console.error("Refund error:", error);
+
+      // More specific error messages
+      if (error.message.includes("404")) {
+        toast.error(
+          "Refund endpoint not found. Please check API configuration.",
+        );
+      } else if (error.message.includes("Cannot refund")) {
+        toast.error(error.message);
+      } else {
+        toast.error(`Failed to issue refund: ${error.message}`);
+      }
+    } finally {
+      setRefunding(false);
     }
   };
 
-  const totalAmount = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
-  const completedAmount = filteredPayments
-    .filter((p) => p.status === 'completed')
-    .reduce((sum, p) => sum + p.amount, 0);
+  const handleSearch = (value: string) => {
+    setSearch(value);
+  };
+
+  // Use optional chaining and fallback to an empty array
+  const filteredPayments = (payments || []).filter((payment) => {
+    if (!search) return true;
+
+    const searchLower = search.toLowerCase();
+    return (
+      payment.userName?.toLowerCase().includes(searchLower) ||
+      payment.userEmail?.toLowerCase().includes(searchLower) ||
+      payment.stripePaymentId.toLowerCase().includes(searchLower) ||
+      payment.businessName?.toLowerCase().includes(searchLower) ||
+      payment.description?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Update your triggerSync function in Payments.tsx
+  const triggerSync = async () => {
+    try {
+      if (!token) throw new Error("Not authenticated");
+
+      // Create a persistent toast that won't disappear automatically
+      const toastId = toast.loading("Syncing with Stripe...", {
+        duration: Infinity, // Keep until we manually dismiss it
+      });
+
+      try {
+        await postWithAuth("/admin/sync/stripe/transactions?days=7", token);
+
+        // Update the toast to success
+        toast.success("Sync completed! Refreshing payments...", {
+          id: toastId,
+        });
+
+        // Refresh payments after a short delay so users can see the success message
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } catch (error: any) {
+        // Update the toast to error
+        toast.error("Sync failed: " + error.message, {
+          id: toastId,
+        });
+      }
+    } catch (error: any) {
+      toast.error("Sync failed: " + error.message);
+    }
+  };
+
+  if (error && !loading) {
+    return (
+      <AdminLayout>
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-lg font-semibold text-red-500">
+              Error loading payments
+            </h2>
+            <p className="mt-2 text-muted-foreground">{error}</p>
+            <Button className="mt-4" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+            <div>
+              <Button className="mt-4 " onClick={triggerSync}>
+                Sync with Stripe
+              </Button>
+            </div>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -64,67 +198,166 @@ export default function Payments() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Payments</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            View and manage payment transactions
+            View and manage payment transactions from Stripe
           </p>
         </div>
 
         {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="admin-stat-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <DollarSign className="h-5 w-5 text-primary" />
+        {statsLoading ? (
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="admin-stat-card">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 animate-pulse rounded-lg bg-muted" />
+                  <div className="space-y-2">
+                    <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+                    <div className="h-8 w-16 animate-pulse rounded bg-muted" />
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Transactions</p>
-                <p className="text-2xl font-bold">{filteredPayments.length}</p>
-              </div>
-            </div>
+            ))}
           </div>
-          <div className="admin-stat-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-status-active/10">
-                <DollarSign className="h-5 w-5 text-status-active" />
+        ) : (
+          stats && (
+            <TooltipProvider>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {/* Total Transactions */}
+                <div className="admin-stat-card">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <DollarSign className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        Total Transactions
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-3.5 w-3.5 cursor-help opacity-50" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>The total number of payments processed.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {stats.totalTransactions}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Completed Revenue */}
+                <div className="admin-stat-card">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-status-active/10">
+                      <DollarSign className="h-5 w-5 text-status-active" />
+                    </div>
+                    <div>
+                      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        Completed Revenue
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-3.5 w-3.5 cursor-help opacity-50" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              Net revenue from succeeded payments. Refunds are
+                              excluded.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </p>
+                      <p className="text-2xl font-bold">
+                        ${stats.completedRevenue.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Total Volume */}
+                <div className="admin-stat-card">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-3/10">
+                      <DollarSign className="h-5 w-5 text-chart-3" />
+                    </div>
+                    <div>
+                      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        Total Volume
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-3.5 w-3.5 cursor-help opacity-50" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              The gross amount of all payment intents,
+                              regardless of status.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </p>
+                      <p className="text-2xl font-bold">
+                        ${stats.totalVolume.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Total Refunded */}
+                <div className="admin-stat-card">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-3/10">
+                      <DollarSign className="h-5 w-5 text-chart-3" />
+                    </div>
+                    <div>
+                      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        Total Refunded
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-3.5 w-3.5 cursor-help opacity-50" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>
+                              The total sum of all refunded amounts across the
+                              business.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </p>
+                      <p className="text-2xl font-bold">
+                        ${stats.totalRefunded.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Completed Revenue</p>
-                <p className="text-2xl font-bold">${completedAmount.toFixed(2)}</p>
-              </div>
-            </div>
-          </div>
-          <div className="admin-stat-card">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-3/10">
-                <DollarSign className="h-5 w-5 text-chart-3" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Volume</p>
-                <p className="text-2xl font-bold">${totalAmount.toFixed(2)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+            </TooltipProvider>
+          )
+        )}
 
         {/* Filters */}
         <div className="admin-card">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <SearchInput
               value={search}
-              onChange={setSearch}
-              placeholder="Search by name, email, or Stripe ID..."
+              onChange={handleSearch}
+              placeholder="Search by name, email, Stripe ID, or business..."
               className="flex-1"
             />
             <Select
               value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value as PaymentStatus | 'all')}
+              onValueChange={(value) =>
+                setStatusFilter(value as PaymentStatus | "all")
+              }
             >
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="succeeded">Completed</SelectItem>
+                <SelectItem value="requires_payment_method">Failed</SelectItem>
+                <SelectItem value="canceled">Canceled</SelectItem>
+                <SelectItem value="processing">Processing</SelectItem>
                 <SelectItem value="refunded">Refunded</SelectItem>
                 <SelectItem value="disputed">Disputed</SelectItem>
               </SelectContent>
@@ -135,95 +368,169 @@ export default function Payments() {
         {/* Payments Table */}
         <div className="admin-card p-0">
           <div className="overflow-x-auto rounded-lg">
-            <table className="admin-table">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th>Stripe Payment ID</th>
-                  <th>User</th>
-                  <th>Description</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                  <th className="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPayments.length === 0 ? (
+            {loading ? (
+              <div className="flex min-h-[200px] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <table className="admin-table">
+                <thead className="bg-muted/50">
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                      No payments found
-                    </td>
+                    <th>Stripe Payment ID</th>
+                    <th>User</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th className="text-right">Actions</th>
                   </tr>
-                ) : (
-                  filteredPayments.map((payment) => (
-                    <tr key={payment.id}>
-                      <td className="font-mono text-xs">{payment.stripePaymentId}</td>
-                      <td>
-                        <div>
-                          <p className="font-medium">{payment.userName}</p>
-                          <p className="text-xs text-muted-foreground">{payment.userEmail}</p>
-                        </div>
-                      </td>
-                      <td>{payment.description}</td>
-                      <td className="font-semibold">
-                        ${payment.amount.toFixed(2)} {payment.currency}
-                      </td>
-                      <td>
-                        <div>
-                          <StatusBadge status={payment.status} />
-                          {payment.disputeStatus && (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Dispute: {payment.disputeStatus}
-                            </p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="text-muted-foreground">
-                        {format(new Date(payment.createdAt), 'MMM d, yyyy')}
-                      </td>
-                      <td className="text-right">
-                        {payment.status === 'completed' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setRefundPayment(payment)}
-                          >
-                            <RefreshCw className="mr-1 h-4 w-4" />
-                            Refund
-                          </Button>
+                </thead>
+                <tbody>
+                  {filteredPayments.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="py-8 text-center text-muted-foreground"
+                      >
+                        {search
+                          ? "No payments found matching your search"
+                          : "No payments found"}
+                        {!search && (
+                          <div className="mt-2">
+                            <Button variant="ghost" onClick={triggerSync}>
+                              <RefreshCw className="mr-1 h-4 w-4" />
+                              Sync with Stripe
+                            </Button>
+                          </div>
                         )}
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    filteredPayments.map((payment) => (
+                      <tr key={payment.id}>
+                        <td className="font-mono text-xs max-w-[150px] truncate">
+                          {payment.stripePaymentId}
+                        </td>
+                        <td>
+                          <div>
+                            <p className="font-medium">
+                              {payment.userName || "N/A"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {payment.userEmail || "N/A"}
+                            </p>
+                            {payment.businessName && (
+                              <p className="text-xs text-muted-foreground">
+                                Business: {payment.businessName}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                        <td>{payment.description || "Payment"}</td>
+                        <td className="font-semibold">
+                          {formatAmount(payment.amount, payment.currency)}
+                        </td>
+                        <td>
+                          <div>
+                            <StatusBadge
+                              status={getDisplayStatus(payment.status)}
+                            />
+                            {payment.disputeStatus && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Dispute: {payment.disputeStatus}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="text-muted-foreground">
+                          {format(
+                            new Date(payment.createdAt),
+                            "MMM d, yyyy HH:mm",
+                          )}
+                        </td>
+                        <td className="text-right">
+                          {payment.status === "succeeded" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setRefundPayment(payment)}
+                              disabled={refunding}
+                            >
+                              <RefreshCw className="mr-1 h-4 w-4" />
+                              Refund
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="border-t p-4 text-center">
+              <Button variant="outline" onClick={loadMore} disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load More"
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Refund Dialog */}
-      <AlertDialog open={!!refundPayment} onOpenChange={() => setRefundPayment(null)}>
+      <AlertDialog
+        open={!!refundPayment}
+        onOpenChange={() => !refunding && setRefundPayment(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Issue Refund</AlertDialogTitle>
             <AlertDialogDescription>
               {refundPayment && (
                 <>
-                  Are you sure you want to refund ${refundPayment.amount.toFixed(2)}{' '}
-                  {refundPayment.currency} to {refundPayment.userName}?
+                  Are you sure you want to refund{" "}
+                  {formatAmount(refundPayment.amount, refundPayment.currency)}{" "}
+                  to {refundPayment.userName || "the customer"}?
                   <br />
                   <br />
-                  <span className="font-mono text-xs">
+                  <span className="font-mono text-xs block break-all">
                     Payment ID: {refundPayment.stripePaymentId}
                   </span>
+                  {refundPayment.businessName && (
+                    <span className="text-sm block mt-2">
+                      Business: {refundPayment.businessName}
+                    </span>
+                  )}
                 </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRefund}>Issue Refund</AlertDialogAction>
+            <AlertDialogCancel disabled={refunding}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRefund}
+              disabled={refunding}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {refunding ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Issue Refund"
+              )}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -1,5 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+// import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -18,13 +18,12 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
+      <Toaster position="top-right" richColors />
       <BrowserRouter>
         <Routes>
           {/* Redirect root to admin */}
           <Route path="/" element={<Navigate to="/admin" replace />} />
-          
+
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
@@ -32,7 +31,7 @@ const App = () => (
           <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
           <Route path="/admin/payments" element={<AdminPayments />} />
           <Route path="/admin/audit-log" element={<AdminAuditLog />} />
-          
+
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />
         </Routes>

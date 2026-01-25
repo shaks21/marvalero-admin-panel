@@ -1,53 +1,62 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { Eye } from 'lucide-react';
-import { AdminLayout } from '@/components/admin/AdminLayout';
-import { SearchInput } from '@/components/admin/SearchInput';
-import { StatusBadge } from '@/components/admin/StatusBadge';
-import { UserTypeBadge } from '@/components/admin/UserTypeBadge';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Eye } from "lucide-react";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { SearchInput } from "@/components/admin/SearchInput";
+import { StatusBadge } from "@/components/admin/StatusBadge";
+import { UserTypeBadge } from "@/components/admin/UserTypeBadge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { mockUsers, type UserType, type UserStatus } from '@/data/mockData';
-import { formatDistanceToNow } from 'date-fns';
+} from "@/components/ui/select";
+import { useUsers } from "@/hooks/useUsers";
+import { formatDistanceToNow, parseISO } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
+import { mapUserStatus } from "@/lib/utils";
 
 export default function Users() {
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<UserType | 'all'>('all');
-  const [statusFilter, setStatusFilter] = useState<UserStatus | 'all'>('all');
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<
+    "all" | "consumer" | "business" | "influencer"
+  >("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "ACTIVE" | "SUSPENDED" | "BANNED"
+  >("all");
+  const [page, setPage] = useState(1);
 
-  const filteredUsers = useMemo(() => {
-    return mockUsers.filter((user) => {
-      // Search filter
-      const searchLower = search.toLowerCase();
-      const matchesSearch =
-        !search ||
-        user.name.toLowerCase().includes(searchLower) ||
-        user.email.toLowerCase().includes(searchLower) ||
-        user.phone.includes(search) ||
-        (user.businessName && user.businessName.toLowerCase().includes(searchLower));
+  const { users, pagination, loading, error } = useUsers({
+    page,
+    limit: 10,
+    search: search || undefined,
+    userType: typeFilter !== "all" ? typeFilter : undefined,
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
 
-      // Type filter
-      const matchesType = typeFilter === 'all' || user.type === typeFilter;
-
-      // Status filter
-      const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-
-      return matchesSearch && matchesType && matchesStatus;
-    });
-  }, [search, typeFilter, statusFilter]);
+  console.log("Users page render:", {
+    search,
+    typeFilter,
+    statusFilter,
+    page,
+    users,
+    pagination,
+    loading,
+    error,
+  }
+  )
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-foreground">User Management</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            User Management
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Search and manage platform users
           </p>
@@ -58,14 +67,21 @@ export default function Users() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <SearchInput
               value={search}
-              onChange={setSearch}
+              onChange={(value) => {
+                setPage(1);
+                setSearch(value);
+              }}
               placeholder="Search by name, email, phone, or business name..."
               className="flex-1"
             />
+
             <div className="flex gap-3">
               <Select
                 value={typeFilter}
-                onValueChange={(value) => setTypeFilter(value as UserType | 'all')}
+                onValueChange={(value) => {
+                  setPage(1);
+                  setTypeFilter(value as any);
+                }}
               >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="User Type" />
@@ -77,17 +93,22 @@ export default function Users() {
                   <SelectItem value="influencer">Influencer</SelectItem>
                 </SelectContent>
               </Select>
+
               <Select
                 value={statusFilter}
-                onValueChange={(value) => setStatusFilter(value as UserStatus | 'all')}
+                onValueChange={(value) => {
+                  setPage(1);
+                  setStatusFilter(value as any);
+                }}
               >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="disabled">Disabled</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                  <SelectItem value="BANNED">Banned</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -108,34 +129,61 @@ export default function Users() {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.length === 0 ? (
+                {loading ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                      No users found matching your search criteria
+                    <td
+                      colSpan={5}
+                      className="py-8 text-center text-muted-foreground"
+                    >
+                      Loading users…
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-red-500">
+                      {error}
+                    </td>
+                  </tr>
+                ) : users.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="py-8 text-center text-muted-foreground"
+                    >
+                      No users found
                     </td>
                   </tr>
                 ) : (
-                  filteredUsers.map((user) => (
+                  users.map((user) => (
                     <tr key={user.id}>
                       <td>
                         <div>
-                          <p className="font-medium text-foreground">{user.name}</p>
-                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                          <p className="font-medium text-foreground">
+                            {user.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {user.email}
+                          </p>
                           {user.businessName && (
-                            <p className="text-xs text-muted-foreground">{user.businessName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {user.businessName}
+                            </p>
                           )}
                         </div>
                       </td>
                       <td>
-                        <UserTypeBadge type={user.type} />
+                        <UserTypeBadge type={user.userType} />
                       </td>
                       <td>
-                        <StatusBadge status={user.status} />
+                        <StatusBadge status={mapUserStatus(user.status)} />
                       </td>
                       <td className="text-muted-foreground">
                         {user.lastLoginAt
-                          ? formatDistanceToNow(new Date(user.lastLoginAt), { addSuffix: true })
-                          : 'Never'}
+                          ? formatDistanceToNow(
+                              toZonedTime(user.lastLoginAt, "UTC"), // Convert UTC to local time
+                              { addSuffix: true },
+                            )
+                          : "Never"}
                       </td>
                       <td className="text-right">
                         <Button variant="ghost" size="sm" asChild>
@@ -151,10 +199,31 @@ export default function Users() {
               </tbody>
             </table>
           </div>
-          <div className="border-t p-4">
+
+          {/* Footer / Pagination */}
+          <div className="border-t p-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Showing {filteredUsers.length} of {mockUsers.length} users
+              Showing {users.length} of {pagination.total} users
             </p>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= pagination.totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </div>
       </div>
