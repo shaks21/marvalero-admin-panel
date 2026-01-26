@@ -48,6 +48,11 @@ export class AdminController {
     return this.adminService.searchUsers(query);
   }
 
+  @Get('users/all')
+  async getAllUsers() {
+    return this.adminService.getAllUsers();
+  }
+
   @Get('users')
   async getUsers(
     @Query('page') page: string,

@@ -10,6 +10,7 @@ export function cn(...inputs: ClassValue[]) {
 export function mapUserStatus(
   status: 'ACTIVE' | 'SUSPENDED' | 'BANNED'
 ): StatusType {
+  console.log("Mapping user status:", status);
   switch (status) {
     case 'ACTIVE':
       return 'active';

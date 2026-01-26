@@ -104,6 +104,39 @@ export class AdminService {
     }));
   }
 
+  async getAllUsers() {
+  const users = await this.prisma.user.findMany({
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      userType: true,
+      status: true,
+      lastLoginAt: true,
+      createdAt: true,
+      business: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
+  return users.map(user => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    userType: user.userType,
+    status: user.status,
+    lastLoginAt: user.lastLoginAt,
+    createdAt: user.createdAt,
+    businessName: user.business?.name,
+  }));
+}
+
   async getUsers(params: {
     page?: number;
     limit?: number;

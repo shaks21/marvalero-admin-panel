@@ -15,6 +15,7 @@ export type StatusType =
   | "inactive"
   | "suspended"
   | "banned" // User statuses
+  | "disabled"
   | "completed"
   | "failed"
   | "canceled"
@@ -57,7 +58,11 @@ const statusConfig: Record<
     icon: <XCircle className="h-3 w-3" />,
     className: "bg-status-banned/10 text-status-banned",
   },
-
+  disabled: {
+    label: "Disabled",
+    icon: <XCircle className="h-3 w-3" />,
+    className: "bg-status-inactive/10 text-status-inactive",
+  },
   // Payment statuses
   completed: {
     label: "Completed",
