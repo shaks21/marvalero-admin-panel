@@ -122,28 +122,35 @@ export class BusinessService {
     return { success: true, status: canceled.status };
   }
 
+  // Immediate DB update in refundPayment()
   async refundPayment(paymentIntentId: string) {
-    try {
-      // 1. Verify the PaymentIntent status first
-      const pi = await this.stripe.paymentIntents.retrieve(paymentIntentId);
+    const pi = await this.stripe.paymentIntents.retrieve(paymentIntentId);
 
-      if (pi.status !== 'succeeded') {
-        throw new Error(`Cannot refund a payment with status: ${pi.status}`);
-      }
-
-      // 2. Create the refund
-      const refund = await this.stripe.refunds.create({
-        payment_intent: paymentIntentId,
-        reason: 'requested_by_customer', // Good for Stripe's risk engine
-      });
-
-      console.log(`Refund successful: ${refund.id}`);
-      return refund;
-    } catch (error) {
-      console.error('Stripe Refund Error:', error.message);
-      // Rethrow so the controller returns a 400/500 error to the frontend
-      throw error;
+    if (pi.status !== 'succeeded') {
+      throw new Error(`Cannot refund: ${pi.status}`);
     }
+
+    // Optimistic update
+    await this.prisma.transaction.update({
+      where: { stripePaymentId: paymentIntentId },
+      data: { status: 'refund_pending' },
+    });
+
+    const refund = await this.stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      reason: 'requested_by_customer',
+    });
+
+    // Confirm update
+    await this.prisma.transaction.update({
+      where: { stripePaymentId: paymentIntentId },
+      data: {
+        status: 'refunded',
+        refundAmount: refund.amount,
+      },
+    });
+
+    return refund;
   }
 
   async getDisputes(businessId: string) {
@@ -215,65 +222,66 @@ export class BusinessService {
   // }
 
   // In your BusinessService's getAllPayments method:
-async getAllPayments(limit = 50, cursor?: string) {
-  const where: any = {};
-  
-  if (cursor) {
-    const cursorTransaction = await this.prisma.transaction.findUnique({
-      where: { id: cursor },
-    });
-    
-    if (cursorTransaction) {
-      where.createdAt = { lt: cursorTransaction.createdAt };
-    }
-  }
+  async getAllPayments(limit = 50, cursor?: string) {
+    const where: any = {};
 
-  const transactions = await this.prisma.transaction.findMany({
-    take: limit,
-    where,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      business: {
-        include: {
-          user: {
-            select: {
-              name: true,
-              email: true,
+    if (cursor) {
+      const cursorTransaction = await this.prisma.transaction.findUnique({
+        where: { id: cursor },
+      });
+
+      if (cursorTransaction) {
+        where.createdAt = { lt: cursorTransaction.createdAt };
+      }
+    }
+
+    const transactions = await this.prisma.transaction.findMany({
+      take: limit,
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        business: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
 
-  // Format for frontend
-  const formattedData = transactions.map(t => ({
-    id: t.id,
-    stripePaymentId: t.stripePaymentId,
-    description: t.description || 'Payment',
-    amount: t.amount,
-    refundAmount: t.refundAmount,
-    currency: t.currency,
-    status: t.status,
-    refunded: t.refundAmount > 0,
-    userName: t.business?.user?.name || t.userName || 'Unknown User',
-    userEmail: t.business?.user?.email || t.userEmail || 'No Email',
-    businessId: t.business?.id,
-    businessName: t.business?.name,
-    createdAt: t.createdAt.toISOString(),
-    customerId: t.business?.stripeCustomerId,
-  }));
+    // Format for frontend
+    const formattedData = transactions.map((t) => ({
+      id: t.id,
+      stripePaymentId: t.stripePaymentId,
+      description: t.description || 'Payment',
+      amount: t.amount,
+      refundAmount: t.refundAmount,
+      currency: t.currency,
+      status: t.status,
+      refunded: t.refundAmount > 0,
+      userName: t.business?.user?.name || t.userName || 'Unknown User',
+      userEmail: t.business?.user?.email || t.userEmail || 'No Email',
+      businessId: t.business?.id,
+      businessName: t.business?.name,
+      createdAt: t.createdAt.toISOString(),
+      customerId: t.business?.stripeCustomerId,
+    }));
 
-  const nextCursor = transactions.length > 0 
-    ? transactions[transactions.length - 1].id 
-    : undefined;
+    const nextCursor =
+      transactions.length > 0
+        ? transactions[transactions.length - 1].id
+        : undefined;
 
-  return {
-    data: formattedData,
-    hasMore: transactions.length === limit,
-    nextCursor,
-  };
-}
+    return {
+      data: formattedData,
+      hasMore: transactions.length === limit,
+      nextCursor,
+    };
+  }
 
   async getAllFailedPayments(limit = 50, starting_after?: string) {
     const all = await this.stripe.paymentIntents.list({
@@ -297,28 +305,28 @@ async getAllPayments(limit = 50, cursor?: string) {
   }
 
   async getGlobalPaymentStats() {
-  const stats = await this.prisma.transaction.aggregate({
-    _sum: {
-      amount: true,
-      refundAmount: true,
-    },
-    _count: {
-      id: true,
-    },
-  });
+    const stats = await this.prisma.transaction.aggregate({
+      _sum: {
+        amount: true,
+        refundAmount: true,
+      },
+      _count: {
+        id: true,
+      },
+    });
 
-  const succeededTotal = await this.prisma.transaction.aggregate({
-    where: { status: 'succeeded' },
-    _sum: { amount: true }
-  });
+    const succeededTotal = await this.prisma.transaction.aggregate({
+      where: { status: 'succeeded' },
+      _sum: { amount: true },
+    });
 
-  return {
-    totalTransactions: stats._count.id,
-    completedRevenue: (succeededTotal._sum.amount || 0) / 100,
-    totalVolume: (stats._sum.amount || 0) / 100,
-    totalRefunded: (stats._sum.refundAmount || 0) / 100,
-  };
-}
+    return {
+      totalTransactions: stats._count.id,
+      completedRevenue: (succeededTotal._sum.amount || 0) / 100,
+      totalVolume: (stats._sum.amount || 0) / 100,
+      totalRefunded: (stats._sum.refundAmount || 0) / 100,
+    };
+  }
 
   // async getGlobalPaymentStats() {
   //   // Production Tip: Don't use .list() for stats if you have >1000 payments.

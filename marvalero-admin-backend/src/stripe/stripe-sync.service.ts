@@ -4,7 +4,7 @@ import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 // Type helper for transaction status
-type TransactionStatus = 
+type TransactionStatus =
   | 'succeeded'
   | 'requires_payment_method'
   | 'canceled'
@@ -37,84 +37,91 @@ export class StripeSyncService {
 
     try {
       while (hasMore) {
-        const params: Stripe.PaymentIntentListParams = {
+        // Fetch Charges instead of PaymentIntents for better refund data
+        const params: Stripe.ChargeListParams = {
           limit: 100,
           created: { gte: cutoffTimestamp },
+          expand: ['data.payment_intent', 'data.refunds.data'],
         };
-        
+
         if (startingAfter) {
           params.starting_after = startingAfter;
         }
 
-        const paymentIntents = await this.stripe.paymentIntents.list(params);
-        
-        for (const pi of paymentIntents.data) {
-          // Skip if we already have this transaction and it's recent (unless force=true)
-          if (!force) {
-            const existing = await this.prisma.transaction.findUnique({
-              where: { stripePaymentId: pi.id },
-            });
-            
-            if (existing && existing.lastSyncedAt && 
-                existing.lastSyncedAt > new Date(Date.now() - 24 * 60 * 60 * 1000)) {
-              continue;
-            }
-          }
+        const charges = await this.stripe.charges.list(params);
+
+        console.log('Fetched charges data:', charges.data);
+
+        for (const charge of charges.data) {
+          const paymentIntentId =
+            typeof charge.payment_intent === 'string'
+              ? charge.payment_intent
+              : charge.payment_intent?.id || charge.id;
+
+          // ALWAYS process transactions when syncing (remove the skip logic)
+          // The upsert will update if needed, create if new
 
           // Find business (optional)
           let businessId: string | null = null;
-          if (pi.customer && typeof pi.customer === 'string') {
+          if (charge.customer && typeof charge.customer === 'string') {
             const business = await this.prisma.business.findFirst({
-              where: { stripeCustomerId: pi.customer },
+              where: { stripeCustomerId: charge.customer },
             });
             if (business) {
               businessId = business.id;
             }
           }
 
-          // Check for refunds
+          // Determine status from Charge and Refunds
+          let displayStatus: TransactionStatus;
           let refundAmount = 0;
-          let displayStatus: TransactionStatus = pi.status as TransactionStatus;
-          
-          if (pi.status === 'succeeded') {
-            const refunds = await this.stripe.refunds.list({
-              payment_intent: pi.id,
-              limit: 10,
-            });
-            
-            if (refunds.data.length > 0) {
-              refundAmount = refunds.data.reduce((sum, refund) => sum + refund.amount, 0);
-              if (refundAmount >= pi.amount) {
-                displayStatus = 'refunded';
-              } else if (refundAmount > 0) {
-                displayStatus = 'partially_refunded';
-              }
+
+          // Check for refunds FIRST
+          if (charge.refunded && charge.refunds?.data) {
+            refundAmount = charge.refunds.data.reduce(
+              (sum, refund) => sum + refund.amount,
+              0,
+            );
+            if (refundAmount >= charge.amount) {
+              displayStatus = 'refunded';
+            } else if (refundAmount > 0) {
+              displayStatus = 'partially_refunded';
+            } else {
+              displayStatus = charge.status as TransactionStatus;
             }
           }
+          // Check for disputes
+          else if (charge.disputed) {
+            displayStatus = 'disputed';
+          }
+          // Use the charge status as a fallback
+          else {
+            displayStatus = charge.status as TransactionStatus;
+          }
 
-          // Prepare update data
+          // Prepare data
           const updateData: any = {
             status: displayStatus,
-            amount: pi.amount,
+            amount: charge.amount,
             refundAmount,
-            currency: pi.currency,
-            description: pi.description || null,
-            metadata: pi.metadata || null,
+            currency: charge.currency,
+            description: charge.description || null,
+            metadata: charge.metadata || null,
             lastSyncedAt: new Date(),
             syncedFromStripe: true,
           };
 
-          // Prepare create data
           const createData: any = {
-            stripePaymentId: pi.id,
-            amount: pi.amount,
+            stripePaymentId: paymentIntentId, // Use the extracted ID
+            amount: charge.amount,
             refundAmount,
-            currency: pi.currency,
+            currency: charge.currency,
             status: displayStatus,
-            description: pi.description || null,
-            metadata: pi.metadata || null,
-            userEmail: pi.receipt_email || null,
-            userName: pi.metadata?.userName || null,
+            description: charge.description || null,
+            metadata: charge.metadata || null,
+            userEmail: charge.receipt_email || null,
+            userName:
+              charge.billing_details?.name || charge.metadata?.userName || null,
             lastSyncedAt: new Date(),
             syncedFromStripe: true,
           };
@@ -123,37 +130,39 @@ export class StripeSyncService {
           if (businessId) {
             updateData.business = { connect: { id: businessId } };
             createData.business = { connect: { id: businessId } };
-          } else {
-            // Leave businessId as null if not found
-            updateData.business = { disconnect: true };
           }
 
           // Upsert transaction
           try {
             const result = await this.prisma.transaction.upsert({
-              where: { stripePaymentId: pi.id },
+              where: { stripePaymentId: paymentIntentId }, // Use the extracted ID
               update: updateData,
               create: createData,
             });
 
             // Check if it was created or updated
-            const timeDifference = Math.abs(result.createdAt.getTime() - result.updatedAt.getTime());
+            const timeDifference = Math.abs(
+              result.createdAt.getTime() - result.updatedAt.getTime(),
+            );
             if (timeDifference < 1000) {
               createdCount++;
             } else {
               updatedCount++;
             }
-            
+
             syncedCount++;
           } catch (upsertError: any) {
-            this.logger.error(`Error upserting transaction ${pi.id}:`, upsertError.message);
+            this.logger.error(
+              `Error upserting transaction ${charge.id}:`,
+              upsertError.message,
+            );
             // Continue with next transaction
           }
         }
 
-        hasMore = paymentIntents.has_more;
-        if (paymentIntents.data.length > 0) {
-          startingAfter = paymentIntents.data[paymentIntents.data.length - 1].id;
+        hasMore = charges.has_more;
+        if (charges.data.length > 0) {
+          startingAfter = charges.data[charges.data.length - 1].id;
         }
       }
 
@@ -177,10 +186,7 @@ export class StripeSyncService {
     // Fix: Use correct Prisma syntax for null check
     const staleTransactions = await this.prisma.transaction.findMany({
       where: {
-        OR: [
-          { lastSyncedAt: { lt: cutoffDate } },
-          { lastSyncedAt: undefined },
-        ],
+        OR: [{ lastSyncedAt: { lt: cutoffDate } }, { lastSyncedAt: undefined }],
       },
       take: 100,
     });
@@ -198,16 +204,20 @@ export class StripeSyncService {
         );
 
         let refundAmount = 0;
-        let displayStatus: TransactionStatus = paymentIntent.status as TransactionStatus;
+        let displayStatus: TransactionStatus =
+          paymentIntent.status as TransactionStatus;
 
         if (paymentIntent.status === 'succeeded') {
           const refunds = await this.stripe.refunds.list({
             payment_intent: paymentIntent.id,
             limit: 10,
           });
-          
+
           if (refunds.data.length > 0) {
-            refundAmount = refunds.data.reduce((sum, refund) => sum + refund.amount, 0);
+            refundAmount = refunds.data.reduce(
+              (sum, refund) => sum + refund.amount,
+              0,
+            );
             if (refundAmount >= paymentIntent.amount) {
               displayStatus = 'refunded';
             } else if (refundAmount > 0) {

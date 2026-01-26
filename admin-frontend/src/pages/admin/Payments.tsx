@@ -1,6 +1,14 @@
 // src/pages/admin/Payments.tsx
-import { useState, useEffect } from "react";
-import { RefreshCw, DollarSign, Loader2, Info } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { 
+  RefreshCw, 
+  DollarSign, 
+  Loader2, 
+  Info, 
+  ChevronUp, 
+  ChevronDown,
+  ArrowUpDown
+} from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { SearchInput } from "@/components/admin/SearchInput";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -28,7 +36,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { format } from "date-fns";
+import { format, compareDesc, compareAsc } from "date-fns";
 import { toast } from "sonner";
 import {
   usePayments,
@@ -59,22 +67,100 @@ const getDisplayStatus = (status: PaymentStatus): string => {
   return statusMap[status] || status;
 };
 
+// Sorting types
+type SortField = 'date' | 'amount' | 'user' | 'status' | 'business';
+type SortDirection = 'asc' | 'desc';
+
 export default function Payments() {
   const { token } = useAuth();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<PaymentStatus | "all">(
-    "all",
-  );
+  const [statusFilter, setStatusFilter] = useState<PaymentStatus | "all">("all");
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [refundPayment, setRefundPayment] = useState<Payment | null>(null);
   const [refunding, setRefunding] = useState(false);
 
   const { payments, loading, error, hasMore, loadMore } = usePayments({
-    limit: 50,
-    status: statusFilter !== "all" ? statusFilter : undefined,
-    search: search || undefined,
+    limit: 100, // Fetch more initially for client-side filtering
+    status: undefined, // We'll handle filtering client-side
+    search: undefined,
   });
 
   const { stats, loading: statsLoading } = usePaymentStats();
+
+  // Client-side filtering and sorting
+  const filteredAndSortedPayments = useMemo(() => {
+    if (!payments) return [];
+
+    let filtered = [...payments];
+
+    // Apply search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter((payment) => {
+        return (
+          payment.userName?.toLowerCase().includes(searchLower) ||
+          payment.userEmail?.toLowerCase().includes(searchLower) ||
+          payment.stripePaymentId.toLowerCase().includes(searchLower) ||
+          payment.businessName?.toLowerCase().includes(searchLower) ||
+          payment.description?.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((payment) => payment.status === statusFilter);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any;
+
+      switch (sortField) {
+        case 'date':
+          aValue = new Date(a.createdAt).getTime();
+          bValue = new Date(b.createdAt).getTime();
+          break;
+        case 'amount':
+          aValue = a.amount;
+          bValue = b.amount;
+          break;
+        case 'user':
+          aValue = a.userName?.toLowerCase() || '';
+          bValue = b.userName?.toLowerCase() || '';
+          break;
+        case 'status':
+          aValue = getDisplayStatus(a.status);
+          bValue = getDisplayStatus(b.status);
+          break;
+        case 'business':
+          aValue = a.businessName?.toLowerCase() || '';
+          bValue = b.businessName?.toLowerCase() || '';
+          break;
+        default:
+          return 0;
+      }
+
+      // Handle string comparison
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        if (sortDirection === 'asc') {
+          return aValue.localeCompare(bValue);
+        } else {
+          return bValue.localeCompare(aValue);
+        }
+      }
+
+      // Handle number/date comparison
+      if (sortDirection === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+      }
+    });
+
+    return filtered;
+  }, [payments, search, statusFilter, sortField, sortDirection]);
 
   const handleRefund = async () => {
     if (!refundPayment || !token) return;
@@ -84,7 +170,6 @@ export default function Payments() {
 
       console.log("Initiating refund for:", refundPayment.stripePaymentId);
 
-      // Use the correct endpoint - no businessId needed anymore
       await postWithAuth(
         `/admin/business/payments/${refundPayment.stripePaymentId}/refund`,
         token,
@@ -92,17 +177,11 @@ export default function Payments() {
 
       toast.success(`Refund initiated for ${refundPayment.stripePaymentId}`);
       setRefundPayment(null);
-
-      // Refresh the payments list after successful refund
       toast.info("Refund processed successfully");
-
-      // You might want to add a refresh function to your usePayments hook
-      // Or trigger a refetch
-      window.location.reload(); // Simple refresh for now
+      window.location.reload();
     } catch (error: any) {
       console.error("Refund error:", error);
 
-      // More specific error messages
       if (error.message.includes("404")) {
         toast.error(
           "Refund endpoint not found. Please check API configuration.",
@@ -121,44 +200,65 @@ export default function Payments() {
     setSearch(value);
   };
 
-  // Use optional chaining and fallback to an empty array
-  const filteredPayments = (payments || []).filter((payment) => {
-    if (!search) return true;
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to descending for date, ascending for others
+      setSortField(field);
+      setSortDirection(field === 'date' ? 'desc' : 'asc');
+    }
+  };
 
-    const searchLower = search.toLowerCase();
+  const SortableHeader = ({ 
+    field, 
+    children 
+  }: { 
+    field: SortField; 
+    children: React.ReactNode;
+  }) => {
+    const isActive = sortField === field;
     return (
-      payment.userName?.toLowerCase().includes(searchLower) ||
-      payment.userEmail?.toLowerCase().includes(searchLower) ||
-      payment.stripePaymentId.toLowerCase().includes(searchLower) ||
-      payment.businessName?.toLowerCase().includes(searchLower) ||
-      payment.description?.toLowerCase().includes(searchLower)
+      <th 
+        className="cursor-pointer hover:bg-muted/30 transition-colors"
+        onClick={() => handleSort(field)}
+      >
+        <div className="flex items-center gap-1">
+          {children}
+          {isActive ? (
+            sortDirection === 'asc' ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )
+          ) : (
+            <ArrowUpDown className="h-4 w-4 opacity-50" />
+          )}
+        </div>
+      </th>
     );
-  });
+  };
 
-  // Update your triggerSync function in Payments.tsx
   const triggerSync = async () => {
     try {
       if (!token) throw new Error("Not authenticated");
 
-      // Create a persistent toast that won't disappear automatically
       const toastId = toast.loading("Syncing with Stripe...", {
-        duration: Infinity, // Keep until we manually dismiss it
+        duration: Infinity,
       });
 
       try {
         await postWithAuth("/admin/sync/stripe/transactions?days=7", token);
 
-        // Update the toast to success
         toast.success("Sync completed! Refreshing payments...", {
           id: toastId,
         });
 
-        // Refresh payments after a short delay so users can see the success message
         setTimeout(() => {
           window.location.reload();
         }, 1500);
       } catch (error: any) {
-        // Update the toast to error
         toast.error("Sync failed: " + error.message, {
           id: toastId,
         });
@@ -195,11 +295,23 @@ export default function Payments() {
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Payments</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            View and manage payment transactions from Stripe
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Payments</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              View and manage payment transactions from Stripe
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={triggerSync}
+              disabled={loading}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Sync with Stripe
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -362,6 +474,9 @@ export default function Payments() {
                 <SelectItem value="disputed">Disputed</SelectItem>
               </SelectContent>
             </Select>
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredAndSortedPayments.length} of {payments?.length || 0} payments
+            </div>
           </div>
         </div>
 
@@ -377,25 +492,33 @@ export default function Payments() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th>Stripe Payment ID</th>
-                    <th>User</th>
+                    <SortableHeader field="user">
+                      User
+                    </SortableHeader>
                     <th>Description</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Date</th>
+                    <SortableHeader field="amount">
+                      Amount
+                    </SortableHeader>
+                    <SortableHeader field="status">
+                      Status
+                    </SortableHeader>
+                    <SortableHeader field="date">
+                      Date
+                    </SortableHeader>
                     <th className="text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPayments.length === 0 ? (
+                  {filteredAndSortedPayments.length === 0 ? (
                     <tr>
                       <td
                         colSpan={7}
                         className="py-8 text-center text-muted-foreground"
                       >
-                        {search
-                          ? "No payments found matching your search"
+                        {search || statusFilter !== "all"
+                          ? "No payments found matching your filters"
                           : "No payments found"}
-                        {!search && (
+                        {!search && statusFilter === "all" && (
                           <div className="mt-2">
                             <Button variant="ghost" onClick={triggerSync}>
                               <RefreshCw className="mr-1 h-4 w-4" />
@@ -406,7 +529,7 @@ export default function Payments() {
                       </td>
                     </tr>
                   ) : (
-                    filteredPayments.map((payment) => (
+                    filteredAndSortedPayments.map((payment) => (
                       <tr key={payment.id}>
                         <td className="font-mono text-xs max-w-[150px] truncate">
                           {payment.stripePaymentId}
@@ -469,19 +592,46 @@ export default function Payments() {
             )}
           </div>
 
-          {/* Load More Button */}
-          {hasMore && (
-            <div className="border-t p-4 text-center">
-              <Button variant="outline" onClick={loadMore} disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  "Load More"
-                )}
-              </Button>
+          {/* Pagination Info */}
+          {filteredAndSortedPayments.length > 0 && (
+            <div className="border-t p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Showing {filteredAndSortedPayments.length} payments
+                  {search && ` matching "${search}"`}
+                  {statusFilter !== "all" && ` with status "${getDisplayStatus(statusFilter)}"`}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={sortField}
+                    onValueChange={(value) => setSortField(value as SortField)}
+                  >
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="date">Date</SelectItem>
+                      <SelectItem value="amount">Amount</SelectItem>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="status">Status</SelectItem>
+                      <SelectItem value="business">Business</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSortDirection(
+                      sortDirection === 'asc' ? 'desc' : 'asc'
+                    )}
+                  >
+                    {sortDirection === 'asc' ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </div>
