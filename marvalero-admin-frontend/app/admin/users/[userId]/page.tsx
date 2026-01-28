@@ -42,7 +42,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchWithAuth } from "@/lib/api";
 import type { User } from "@/hooks/useUsers";
-import { formatStripeDate, safeFormatDate } from "@/lib/utils";
+import { formatStripeAmount, formatStripeDate, safeFormatDate } from "@/lib/utils";
 
 interface ApiUser {
   id: string;
@@ -476,7 +476,7 @@ export default function UserDetail() {
                         <td className="font-mono text-xs">{payment.id}</td>
                         <td>{payment.description}</td>
                         <td className="font-medium">
-                          ${payment.amount.toFixed(2)} {payment.currency}
+                          {formatStripeAmount(payment.amount, payment.currency)}
                         </td>
                         <td>
                           <StatusBadge status={payment.status} />

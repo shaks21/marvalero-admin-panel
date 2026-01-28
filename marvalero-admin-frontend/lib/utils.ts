@@ -167,6 +167,11 @@ export const formatRelativeTime = (timestamp: number | string | null | undefined
   }
 };
 
+// Helper function to format Stripe amount (cents to dollars)
+export const formatStripeAmount = (amount: number, currency: string = "usd") => {
+  return `$${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;
+};
+
 
 
 

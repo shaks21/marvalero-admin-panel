@@ -46,11 +46,7 @@ import {
 } from "@/hooks/usePayments";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchWithAuth, postWithAuth } from "@/lib/api";
-
-// Helper function to format Stripe amount (cents to dollars)
-const formatAmount = (amount: number, currency: string = "usd") => {
-  return `$${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;
-};
+import { formatStripeAmount } from "@/lib/utils";
 
 // Helper function to get display status
 const getDisplayStatus = (status: PaymentStatus): string => {
@@ -544,7 +540,7 @@ export default function Payments() {
                         </td>
                         <td>{payment.description || "Payment"}</td>
                         <td className="font-semibold">
-                          {formatAmount(payment.amount, payment.currency)}
+                          {formatStripeAmount(payment.amount, payment.currency)}
                         </td>
                         <td>
                           <div>
@@ -643,7 +639,7 @@ export default function Payments() {
               {refundPayment && (
                 <>
                   Are you sure you want to refund{" "}
-                  {formatAmount(refundPayment.amount, refundPayment.currency)}{" "}
+                  {formatStripeAmount(refundPayment.amount, refundPayment.currency)}{" "}
                   to {refundPayment.userName || "the customer"}?
                   <br />
                   <br />
