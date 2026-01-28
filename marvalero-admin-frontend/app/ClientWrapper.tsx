@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/app/components/ui/tooltip";
 import { Toaster } from "@/app/components/ui/sonner";
-import { AdminLayout } from "@/app/components/admin/SideBar";
+import { SideBar } from "@/app/components/admin/SideBar";
 
 const queryClient = new QueryClient();
 
@@ -14,7 +14,7 @@ export default function ClientWrapper({ children }: { children: ReactNode }) {
   const isAdminRoute = pathname?.startsWith("/admin");
 
   const Content = isAdminRoute ? (
-    <AdminLayout>{children}</AdminLayout>
+    <SideBar>{children}</SideBar>
   ) : (
     children
   );
