@@ -118,7 +118,7 @@
 //     const res = await request(app.getHttpServer())
 //       .patch(`/admin/users/${targetUserId}/status`)
 //       .set('Authorization', `Bearer ${adminToken}`)
-//       .send({ status: 'SUSPENDED' })
+//       .send({ status: 'DISABLED' })
 //       .expect(200);
 
 //     expect(res.body.success).toBe(true);
@@ -129,7 +129,7 @@
 //       .expect(200);
 
 //     console.log('User after suspension:', verify.body);
-//     expect(verify.body.status).toBe('SUSPENDED');
+//     expect(verify.body.status).toBe('DISABLED');
 //   });
 
 //   /**

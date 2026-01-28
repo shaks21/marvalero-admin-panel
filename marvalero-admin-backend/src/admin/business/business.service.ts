@@ -22,6 +22,8 @@ export class BusinessService {
       user: business.user,
       stripeCustomerId: business.stripeCustomerId,
       stripeSubscriptionId: business.stripeSubscriptionId,
+      subscriptionPlan: business.subscriptionPlan,
+      subscriptionStatus: business.subscriptionStatus
     }));
   }
 
@@ -36,7 +38,9 @@ export class BusinessService {
       name: business.name,
       user: business.user,
       stripeCustomerId: business.stripeCustomerId,
-      stripeSubscriptionId: business.stripeSubscriptionId,
+      stripeSubscriptionId: business.stripeSubscriptionId,      
+      subscriptionPlan: business.subscriptionPlan,
+      subscriptionStatus: business.subscriptionStatus
     };
   }
 
@@ -96,9 +100,10 @@ export class BusinessService {
     );
   }
 
-  async cancelSubscription(businessId: string, adminId: string) {
+  async cancelSubscription(id: string, adminId: string) {
+    console.log('Canceling subscription for business ID:', id);
     const biz = await this.prisma.business.findUnique({
-      where: { id: businessId },
+      where: { userId: id },
     });
     if (!biz) throw new NotFoundException('Business not found');
 
@@ -111,7 +116,7 @@ export class BusinessService {
 
     // Update database to reflect cancellation
     await this.prisma.business.update({
-      where: { id: businessId },
+      where: { userId: id },
       data: {
         stripeSubscriptionId: null, // remove the subscription ID
         // optionally record cancellation timestamp/status:

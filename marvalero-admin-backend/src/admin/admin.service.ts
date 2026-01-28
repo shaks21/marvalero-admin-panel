@@ -390,7 +390,7 @@ export class AdminService {
     adminId: string,
   ) {
     // Validate status before calling Prisma
-    const validStatuses = ['ACTIVE', 'SUSPENDED', 'BANNED'];
+    const validStatuses = ['ACTIVE', 'DISABLED'];
 
     if (!validStatuses.includes(status)) {
       throw new BadRequestException(
@@ -401,7 +401,7 @@ export class AdminService {
     // Now TypeScript knows status is valid
     await this.prisma.user.update({
       where: { id: userId },
-      data: { status: status as 'ACTIVE' | 'SUSPENDED' | 'BANNED' },
+      data: { status: status as 'ACTIVE' | 'DISABLED' },
     });
 
     return { success: true };

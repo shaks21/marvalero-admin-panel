@@ -20,8 +20,7 @@ export type UserType = (typeof UserType)[keyof typeof UserType]
 
 export const AccountStatus = {
   ACTIVE: 'ACTIVE',
-  SUSPENDED: 'SUSPENDED',
-  BANNED: 'BANNED'
+  DISABLED: 'DISABLED'
 } as const
 
 export type AccountStatus = (typeof AccountStatus)[keyof typeof AccountStatus]

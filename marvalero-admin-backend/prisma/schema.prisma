@@ -106,8 +106,7 @@ enum UserType {
 
 enum AccountStatus {
   ACTIVE
-  SUSPENDED
-  BANNED
+  DISABLED
 }
 
 model PasswordResetToken {

@@ -68,7 +68,7 @@ async function main() {
         phone: '+987654321',
         password: janePassword,
         userType: 'CONSUMER',
-        status: 'SUSPENDED',
+        status: 'DISABLED',
         lastLoginAt: new Date('2025-12-20'),
       },
     ],

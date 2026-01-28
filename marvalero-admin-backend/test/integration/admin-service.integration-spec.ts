@@ -295,11 +295,11 @@ describe('Admin Integration Tests', () => {
     /**
      * 8. Change user status
      */
-    it('PATCH /admin/users/:userId/status - should change user status to SUSPENDED', async () => {
+    it('PATCH /admin/users/:userId/status - should change user status to DISABLED', async () => {
       const res = await request(app.getHttpServer())
         .patch(`/admin/users/${testUserId}/status`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ status: 'SUSPENDED' })
+        .send({ status: 'DISABLED' })
         .expect(200);
 
       expect(res.body).toHaveProperty('success', true);
@@ -308,7 +308,7 @@ describe('Admin Integration Tests', () => {
       const updatedUser = await prisma.user.findUnique({
         where: { id: testUserId },
       });
-      expect(updatedUser?.status).toBe('SUSPENDED');
+      expect(updatedUser?.status).toBe('DISABLED');
     });
 
     it('PATCH /admin/users/:userId/status - should reject invalid status', async () => {

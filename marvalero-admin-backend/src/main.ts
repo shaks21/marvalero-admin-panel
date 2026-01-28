@@ -11,18 +11,21 @@ async function bootstrap() {
   // '1' means trust the first hop. Use 'true' if behind many hops (Cloudflare -> Nginx).
   app.set('trust proxy', 1);
 
-  // 1. Get origin from environment (e.g., https://admin.marvalero.com)
-  const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:5173';
+  // 1. Create an array of allowed origins
+const allowedOrigins = [
+  process.env.ALLOWED_ORIGIN, 
+  'http://localhost:5173', 
+  'http://localhost:3001'
+].filter((origin): origin is string => origin !== undefined); // removes 'undefined' if the env variable isn't set
 
-  app.enableCors({
-    origin: allowedOrigin,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-    // 2. Preflight success status (some legacy browsers choke on 204)
-    optionsSuccessStatus: 200,
-  });
+app.enableCors({
+  origin: allowedOrigins,
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  credentials: true,
+  optionsSuccessStatus: 200,
+});
 
-  app.setGlobalPrefix('api');
+app.setGlobalPrefix('api');
 
   // Interceptors should usually come AFTER CORS/Prefix setup
   const auditInterceptor = app.get(AuditInterceptor);
