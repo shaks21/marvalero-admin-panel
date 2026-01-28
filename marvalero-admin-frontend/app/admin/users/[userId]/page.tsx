@@ -13,7 +13,7 @@ import {
   CreditCard,
   Building2,
 } from "lucide-react";
-import { AdminLayout } from "@/app/components/admin/AdminLayout";
+import { AdminLayout } from "@/app/components/admin/SideBar";
 import { StatusBadge } from "@/app/components/admin/StatusBadge";
 import { UserTypeBadge } from "@/app/components/admin/UserTypeBadge";
 import { Button } from "@/app/components/ui/button";

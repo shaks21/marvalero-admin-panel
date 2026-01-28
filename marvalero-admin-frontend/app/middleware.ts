@@ -8,15 +8,15 @@ export function middleware(request: NextRequest) {
 
   // Define protected admin routes
   const isAdminRoute = pathname.startsWith('/admin') && 
-                      !pathname.startsWith('/admin/login');
+                      !pathname.startsWith('/login');
 
   // If trying to access admin without token, redirect to login
   if (isAdminRoute && !token) {
-    return NextResponse.redirect(new URL('/admin/login', request.url));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // If already logged in and trying to access login page, redirect to admin
-  if (pathname.startsWith('/admin/login') && token) {
+  if (pathname.startsWith('/login') && token) {
     return NextResponse.redirect(new URL('/admin', request.url));
   }
 
@@ -24,5 +24,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/admin/login'],
+  matcher: ['/admin/:path*', '/login'],
 };

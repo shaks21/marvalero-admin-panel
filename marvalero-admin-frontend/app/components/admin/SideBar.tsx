@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-interface AdminLayoutProps {
+interface SideBarProps {
   children: ReactNode;
 }
 
@@ -27,14 +27,14 @@ const navigation = [
   { name: "Audit Log", href: "/admin/audit-log", icon: ClipboardList },
 ];
 
-export function AdminLayout({ children }: AdminLayoutProps) {
+export function SideBar({ children }: SideBarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, isAdmin, loading, logout } = useAuth();
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || !isAdmin)) {
-      router.replace("/admin/login");
+      router.replace("/login");
     }
   }, [loading, isAuthenticated, isAdmin, router]);
 
@@ -48,7 +48,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const handleLogout = () => {
     logout();
     toast.success("Signed out successfully");
-    router.push("/admin/login");
+    router.push("/login");
   };
 
   if (loading) {

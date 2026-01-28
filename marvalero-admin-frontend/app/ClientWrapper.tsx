@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/app/components/ui/tooltip";
 import { Toaster } from "@/app/components/ui/sonner";
-import { AdminLayout } from "@/app/components/admin/AdminLayout";
+import { AdminLayout } from "@/app/components/admin/SideBar";
 
 const queryClient = new QueryClient();
 
